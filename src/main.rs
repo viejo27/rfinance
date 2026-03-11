@@ -30,6 +30,7 @@ async fn main() -> std::io::Result<()> {
             .app_data(web::Data::new(db_pool.clone()))
             .service(index)
             .service(login)
+            .service(login_post)
             .service(actix_files::Files::new("/css", "static/css").show_files_listing())
             .service(actix_files::Files::new("/js", "static/js").show_files_listing())
     })

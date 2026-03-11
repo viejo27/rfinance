@@ -1,13 +1,18 @@
-document.getElementById('loginForm').addEventListener('submit', function(e) {
+document.getElementById('loginForm').addEventListener('submit', async function(e) {
 	e.preventDefault();
 	
 	const email = document.getElementById('email').value;
 	const password = document.getElementById('password').value;
 	
-	const validEmail = 'admin@admin.com';
-	const validPassword = 'password';
+	const response = await fetch('/api/login', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({ email, password })
+	});
 	
-	if (email === validEmail && password === validPassword) {
+	if (response.ok) {
 		alert('Login exitoso!');
 		window.location.href = '/';
 	} else {

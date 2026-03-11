@@ -1831,6 +1831,7 @@ dependencies = [
  "actix-web",
  "askama",
  "dotenvy",
+ "serde",
  "sqlx",
 ]
 
