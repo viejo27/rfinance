@@ -10,6 +10,3 @@ CREATE TABLE users (
 
 -- Add index for email lookups
 CREATE INDEX idx_users_email ON users(email);
-
--- Down migration
-DROP TABLE users;

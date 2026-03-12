@@ -1,5 +1,7 @@
-use actix_web::{HttpResponse, Responder, post};
+use actix_web::{HttpResponse, Responder, post, web};
+use bcrypt;
 use serde::Deserialize;
+use sqlx::PgPool;
 
 #[derive(Deserialize)]
 struct LoginRequest {
@@ -8,13 +10,21 @@ struct LoginRequest {
 }
 
 #[post("/api/login")]
-async fn login(body: actix_web::web::Json<LoginRequest>) -> impl Responder {
-    let valid_email = "admin@admin.com";
-    let valid_password = "password";
-    
-    if body.email == valid_email && body.password == valid_password {
-        HttpResponse::Ok()
-    } else {
-        HttpResponse::Unauthorized()
+async fn login(body: web::Json<LoginRequest>, pool: web::Data<PgPool>) -> impl Responder {
+    let result: Option<(String,)> = sqlx::query_as("SELECT password FROM users WHERE email = $1")
+        .bind(&body.email)
+        .fetch_optional(pool.get_ref())
+        .await
+        .unwrap();
+
+    match result {
+        Some((hashed_password,)) => {
+            if bcrypt::verify(&body.password, &hashed_password).unwrap_or(false) {
+                HttpResponse::Ok()
+            } else {
+                HttpResponse::Unauthorized()
+            }
+        }
+        None => HttpResponse::Unauthorized(),
     }
 }
