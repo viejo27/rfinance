@@ -6,7 +6,8 @@
 
 body {
 	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-	background-color: #f5f5f5;
+	background-color: #dfc59b;
+	color: #655641;
 	min-height: 100vh;
 	position: relative;
 }
@@ -23,11 +24,12 @@ body:not(.login-page) {
 	right: 20px;
 	width: auto;
 	padding: 8px 16px;
-	background-color: #dc3545;
+	background-color: #e84c40;
+	color: white;
 }
 
 .logout-btn:hover {
-	background-color: #c82333;
+	background-color: #98493c;
 }
 
 .login-container {
@@ -37,23 +39,23 @@ body:not(.login-page) {
 }
 
 .login-box {
-	background: white;
+	background: #f8eaae;
 	padding: 40px;
 	border-radius: 8px;
-	box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+	border: 2px solid #7d7b53;
 }
 
 .login-box h1 {
 	font-size: 24px;
 	font-weight: 600;
-	color: #333;
+	color: #655641;
 	margin-bottom: 8px;
 	text-align: center;
 }
 
 .subtitle {
 	font-size: 14px;
-	color: #666;
+	color: #7d7b53;
 	text-align: center;
 	margin-bottom: 32px;
 }
@@ -66,7 +68,7 @@ body:not(.login-page) {
 	display: block;
 	font-size: 14px;
 	font-weight: 500;
-	color: #333;
+	color: #655641;
 	margin-bottom: 8px;
 }
 
@@ -74,14 +76,15 @@ body:not(.login-page) {
 	width: 100%;
 	padding: 12px;
 	font-size: 14px;
-	border: 1px solid #ddd;
+	border: 1px solid #7d7b53;
 	border-radius: 4px;
+	background: white;
 	transition: border-color 0.2s;
 }
 
 .form-group input:focus {
 	outline: none;
-	border-color: #0066cc;
+	border-color: #655641;
 }
 
 button {
@@ -90,7 +93,7 @@ button {
 	font-size: 14px;
 	font-weight: 500;
 	color: white;
-	background-color: #0066cc;
+	background-color: #7aa455;
 	border: none;
 	border-radius: 4px;
 	cursor: pointer;
@@ -98,5 +101,39 @@ button {
 }
 
 button:hover {
-	background-color: #0052a3;
+	background-color: #655641;
 }
+
+/* /* CSS HEX */ */
+/* --#df493e: #df493e; */
+/* --#7ca857: #7ca857; */
+/* --#695c44: #695c44; */
+/* --#e6ac81: #e6ac81; */
+/* --#5e7743: #5e7743; */
+/* --#8f493a: #8f493a; */
+/* --#ad9d78: #ad9d78; */
+/* --#f5e3ab: #f5e3ab; */
+/* --#ff4a3f: #ff4a3f; */
+/**/
+/* /* SCSS HEX */ */
+/* $#df493e: #df493e; */
+/* $#7ca857: #7ca857; */
+/* $#695c44: #695c44; */
+/* $#e6ac81: #e6ac81; */
+/* $#5e7743: #5e7743; */
+/* $#8f493a: #8f493a; */
+/* $#ad9d78: #ad9d78; */
+/* $#f5e3ab: #f5e3ab; */
+/* $#ff4a3f: #ff4a3f; */
+/**/
+/* /* SCSS RGB */ */
+/* $#df493e: rgba(223,73,62,1); */
+/* $#7ca857: rgba(124,168,87,1); */
+/* $#695c44: rgba(105,92,68,1); */
+/* $#e6ac81: rgba(230,172,129,1); */
+/* $#5e7743: rgba(94,119,67,1); */
+/* $#8f493a: rgba(143,73,58,1); */
+/* $#ad9d78: rgba(173,157,120,1); */
+/* $#f5e3ab: rgba(245,227,171,1); */
+/* $#ff4a3f: rgba(255,74,63,1); */
+
