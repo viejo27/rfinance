@@ -13,7 +13,6 @@ document.getElementById('loginForm').addEventListener('submit', async function(e
 	});
 	
 	if (response.ok) {
-		alert('Login exitoso!');
 		window.location.href = '/';
 	} else {
 		alert('Credenciales incorrectas');

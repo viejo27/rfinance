@@ -1,7 +1,10 @@
-use actix_web::{HttpResponse, Responder, post, web};
+use actix_web::{HttpResponse, Responder, cookie::Cookie, post, web};
 use bcrypt;
 use serde::Deserialize;
 use sqlx::PgPool;
+
+const SESSION_COOKIE_NAME: &str = "rfinance_session";
+const SESSION_DURATION_DAYS: i64 = 27;
 
 #[derive(Deserialize)]
 struct LoginRequest {
@@ -20,11 +23,16 @@ async fn login(body: web::Json<LoginRequest>, pool: web::Data<PgPool>) -> impl R
     match result {
         Some((hashed_password,)) => {
             if bcrypt::verify(&body.password, &hashed_password).unwrap_or(false) {
-                HttpResponse::Ok()
+                let cookie = Cookie::build(SESSION_COOKIE_NAME, &body.email)
+                    .path("/")
+                    .max_age(time::Duration::days(SESSION_DURATION_DAYS))
+                    .http_only(true)
+                    .finish();
+                HttpResponse::Ok().cookie(cookie).body("Login exitoso")
             } else {
-                HttpResponse::Unauthorized()
+                HttpResponse::Unauthorized().body("Credenciales incorrectas")
             }
         }
-        None => HttpResponse::Unauthorized(),
+        None => HttpResponse::Unauthorized().body("Credenciales incorrectas"),
     }
 }
