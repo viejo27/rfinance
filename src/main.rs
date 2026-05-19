@@ -1,5 +1,6 @@
 mod routes {
     pub mod web {
+        pub mod asdf;
         pub mod home;
         pub mod login;
     }
@@ -8,11 +9,13 @@ mod routes {
         pub mod logout;
     }
 }
+mod middleware;
 
 use actix_web::{App, HttpServer, web};
 use dotenvy::dotenv;
 use routes::api::login::login as login_post;
 use routes::api::logout::logout;
+use routes::web::asdf::asdf;
 use routes::web::home::index;
 use routes::web::login::login;
 use sqlx::PgPool;
@@ -31,6 +34,8 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(db_pool.clone()))
+            .wrap(actix_web::middleware::from_fn(middleware::auth::check_session))
+            .service(asdf)
             .service(index)
             .service(login)
             .service(login_post)
