@@ -16,6 +16,17 @@ pub async fn check_session(
         return next.call(req).await.map(ServiceResponse::map_into_boxed_body);
     }
 
+    if path == "/register" {
+        if req.cookie(SESSION_COOKIE_NAME).is_some() {
+            let (request, _) = req.into_parts();
+            let response = HttpResponse::Found()
+                .append_header(("Location", "/"))
+                .finish();
+            return Ok(ServiceResponse::new(request, response));
+        }
+        return next.call(req).await.map(ServiceResponse::map_into_boxed_body);
+    }
+
     if req.cookie(SESSION_COOKIE_NAME).is_none() {
         let (request, _) = req.into_parts();
         let response = HttpResponse::Found()

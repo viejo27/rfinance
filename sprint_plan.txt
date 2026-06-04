@@ -1,0 +1,149 @@
+================================================================================
+SPRINT 1 - rfinance_app
+Fecha inicio: 2026-05-19
+Duracion: 2 semanas
+================================================================================
+
+OBJETIVO DEL SPRINT
+-------------------
+Implementar registro de usuarios y sistema basico de roles
+
+================================================================================
+PRODUCT BACKLOG
+================================================================================
+
+EPICA 1: Sistema de Registro de Usuarios
+  HU-001: Como usuario nuevo, quiero registrarme para acceder al sistema
+  HU-002: Como sistema, quiero validar datos de registro (email unico, password segura)
+  HU-003: Como sistema, quiero crear registro en user_data al registrarse
+
+EPICA 2: Sistema de Roles y Paginas Protegidas
+  HU-004: Como admin, quiero acceder a paginas de administracion
+  HU-005: Como usuario, quiero acceder a mi dashboard personal
+  HU-006: Como sistema, quiero verificar roles en middleware
+
+================================================================================
+SPRINT BACKLOG - TAREAS
+================================================================================
+
+| ID     | Historia de Usuario        | Tarea Tecnica                          | Pts | Prioridad | Estado      |
+|--------|----------------------------|----------------------------------------|-----|-----------|-------------|
+| HU-001 | Registro de usuarios       | Crear endpoint POST /api/register      |  3  | Alta      | [x] DONE    |
+| HU-001 | Registro de usuarios       | Crear template register.html           |  2  | Alta      | [x] DONE    |
+| HU-001 | Registro de usuarios       | Crear ruta GET /register               |  1  | Alta      | [x] DONE    |
+| HU-001 | Registro de usuarios       | Crear JS para formulario de registro   |  2  | Alta      | [x] DONE    |
+| HU-002 | Validacion de datos        | Validar email unico en DB              |  2  | Alta      | [x] DONE    |
+| HU-002 | Validacion de datos        | Validar formato de email y password    |   2  | Media     | [ ] TODO    |
+| HU-003 | Crear user_data            | Insertar datos basicos en user_data    |  2  | Media     | [x] DONE    |
+| HU-004 | Paginas admin              | Crear ruta GET /admin                  |  1  | Media     | [ ] TODO    |
+| HU-004 | Paginas admin              | Crear template admin.html              |  2  | Media     | [ ] TODO    |
+| HU-005 | Dashboard usuario          | Crear ruta GET /dashboard              |  1  | Media     | [ ] TODO    |
+| HU-005 | Dashboard usuario          | Crear template dashboard.html          |  2  | Media     | [ ] TODO    |
+| HU-006 | Middleware de roles        | Crear middleware para verificar rol    |  3  | Alta      | [ ] TODO    |
+| HU-006 | Middleware de roles        | Proteger rutas segun rol               |  2  | Alta      | [ ] TODO    |
+
+TOTAL: 25 puntos
+
+================================================================================
+CRITERIOS DE ACEPTACION
+================================================================================
+
+HU-001: Registro de usuarios
+  [ ] Formulario con campos: email, password, name, last_name
+  [ ] Validacion de email unico
+  [ ] Password hasheada con bcrypt
+  [ ] Creacion automatica en tabla users y user_data
+  [ ] Redireccion a login despues del registro exitoso
+  [ ] Mensajes de error claros
+
+HU-002: Validacion de datos
+  [ ] Email con formato valido
+  [ ] Password minimo 8 caracteres
+  [ ] Email no duplicado en la base de datos
+
+HU-003: Crear user_data
+  [ ] Registro en user_data al crear usuario
+  [ ] Campos: name, last_name
+
+HU-004: Paginas admin
+  [ ] Ruta /admin solo accesible para rol "admin"
+  [ ] Template admin.html con informacion basica
+
+HU-005: Dashboard usuario
+  [ ] Ruta /dashboard accesible para cualquier usuario autenticado
+  [ ] Template dashboard.html con datos del usuario
+
+HU-006: Middleware de roles
+  [ ] Middleware generico para verificar roles
+  [ ] Configuracion flexible de roles por ruta
+  [ ] Respuesta 403 si no tiene permisos
+  [x] Usuarios logueados no pueden acceder a /register
+
+================================================================================
+DEFINICION DE DONE (DoD)
+================================================================================
+
+  [ ] Codigo compilado sin errores (cargo build)
+  [ ] Codigo revisado con clippy (cargo clippy)
+  [ ] Formato correcto (cargo fmt)
+  [ ] Migraciones ejecutadas
+  [ ] Pruebas manuales de registro
+  [ ] Pruebas manuales de acceso por rol
+  [ ] Documentacion actualizada
+
+================================================================================
+DEPENDENCIAS
+================================================================================
+
+  [ ] Migracion user_data ejecutada
+  [ ] Middleware de sesion funcionando
+  [ ] Tabla users con datos de admin
+
+================================================================================
+RIESGOS IDENTIFICADOS
+================================================================================
+
+  1. SEGURIDAD: Validacion de password debe ser robusta
+  2. PERFORMANCE: Consultas a user_data deben estar indexadas
+  3. UX: Formularios deben tener feedback claro al usuario
+
+================================================================================
+DAILY STANDUP LOG
+================================================================================
+
+Dia 1 (____-__-__):
+  Ayer hice:
+  Hoy hare:
+  Bloqueos:
+
+Dia 2 (____-__-__):
+  Ayer hice:
+  Hoy hare:
+  Bloqueos:
+
+Dia 3 (____-__-__):
+  Ayer hice:
+  Hoy hare:
+  Bloqueos:
+
+Dia 4 (____-__-__):
+  Ayer hice:
+  Hoy hare:
+  Bloqueos:
+
+Dia 5 (____-__-__):
+  Ayer hice:
+  Hoy hare:
+  Bloqueos:
+
+================================================================================
+RETROSPECTIVA
+================================================================================
+
+Que salio bien:
+
+Que se puede mejorar:
+
+Acciones para el proximo sprint:
+
+================================================================================

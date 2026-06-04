@@ -1,12 +1,14 @@
 mod routes {
     pub mod web {
-        pub mod asdf;
+        pub mod admin;
         pub mod home;
         pub mod login;
+        pub mod register;
     }
     pub mod api {
         pub mod login;
         pub mod logout;
+        pub mod register;
     }
 }
 mod middleware;
@@ -15,9 +17,11 @@ use actix_web::{App, HttpServer, web};
 use dotenvy::dotenv;
 use routes::api::login::login as login_post;
 use routes::api::logout::logout;
-use routes::web::asdf::asdf;
+use routes::api::register::register as register_post;
+use routes::web::admin::admin;
 use routes::web::home::index;
 use routes::web::login::login;
+use routes::web::register::register;
 use sqlx::PgPool;
 use std::env;
 
@@ -34,11 +38,15 @@ async fn main() -> std::io::Result<()> {
     HttpServer::new(move || {
         App::new()
             .app_data(web::Data::new(db_pool.clone()))
-            .wrap(actix_web::middleware::from_fn(middleware::auth::check_session))
-            .service(asdf)
+            .wrap(actix_web::middleware::from_fn(
+                middleware::auth::check_session,
+            ))
+            .service(admin)
             .service(index)
             .service(login)
+            .service(register)
             .service(login_post)
+            .service(register_post)
             .service(logout)
             .service(actix_files::Files::new("/css", "static/css").show_files_listing())
             .service(actix_files::Files::new("/js", "static/js").show_files_listing())
