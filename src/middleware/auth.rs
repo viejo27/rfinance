@@ -1,10 +1,10 @@
+use actix_session::SessionExt;
 use actix_web::{
+    Error, HttpResponse,
     body::BoxBody,
     dev::{ServiceRequest, ServiceResponse},
-    Error, HttpResponse, middleware::Next,
+    middleware::Next,
 };
-
-const SESSION_COOKIE_NAME: &str = "rfinance_session";
 
 pub async fn check_session(
     req: ServiceRequest,
@@ -12,22 +12,42 @@ pub async fn check_session(
 ) -> Result<ServiceResponse<BoxBody>, Error> {
     let path = req.path().to_string();
 
-    if path == "/login" || path.starts_with("/api/") || path.starts_with("/css") || path.starts_with("/js") {
-        return next.call(req).await.map(ServiceResponse::map_into_boxed_body);
+    if path == "/login"
+        || path.starts_with("/api/")
+        || path.starts_with("/css")
+        || path.starts_with("/js")
+    {
+        return next
+            .call(req)
+            .await
+            .map(ServiceResponse::map_into_boxed_body);
     }
 
     if path == "/register" {
-        if req.cookie(SESSION_COOKIE_NAME).is_some() {
+        if req
+            .get_session()
+            .get::<String>("user_email")
+            .unwrap_or(None)
+            .is_some()
+        {
             let (request, _) = req.into_parts();
             let response = HttpResponse::Found()
                 .append_header(("Location", "/"))
                 .finish();
             return Ok(ServiceResponse::new(request, response));
         }
-        return next.call(req).await.map(ServiceResponse::map_into_boxed_body);
+        return next
+            .call(req)
+            .await
+            .map(ServiceResponse::map_into_boxed_body);
     }
 
-    if req.cookie(SESSION_COOKIE_NAME).is_none() {
+    if req
+        .get_session()
+        .get::<String>("user_email")
+        .unwrap_or(None)
+        .is_none()
+    {
         let (request, _) = req.into_parts();
         let response = HttpResponse::Found()
             .append_header(("Location", "/login"))
@@ -35,5 +55,7 @@ pub async fn check_session(
         return Ok(ServiceResponse::new(request, response));
     }
 
-    next.call(req).await.map(ServiceResponse::map_into_boxed_body)
+    next.call(req)
+        .await
+        .map(ServiceResponse::map_into_boxed_body)
 }

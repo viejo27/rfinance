@@ -1,21 +1,19 @@
-use actix_web::{HttpResponse, Responder, get, web};
+use actix_session::Session;
+use actix_web::{HttpResponse, Responder, get};
 use askama::Template;
-use sqlx::PgPool;
 
 #[derive(Template)]
 #[template(path = "index.html")]
 struct IndexTemplate<'a> {
-    name: &'a i32,
+    email: &'a str,
 }
 
 #[get("/")]
-async fn index(db_pool: web::Data<PgPool>) -> impl Responder {
-    let res = sqlx::query!("SELECT 20 + 7 as sum")
-        .fetch_one(db_pool.get_ref())
-        .await
-        .expect("Error executing query");
-    let hello = IndexTemplate {
-        name: &res.sum.unwrap(),
-    };
+async fn index(session: Session) -> impl Responder {
+    let email = session
+        .get::<String>("user_email")
+        .unwrap_or(None)
+        .unwrap_or_default();
+    let hello = IndexTemplate { email: &email };
     HttpResponse::Ok().body(hello.render().unwrap())
 }

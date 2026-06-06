@@ -13,7 +13,8 @@ mod routes {
 }
 mod middleware;
 
-use actix_web::{App, HttpServer, web};
+use actix_session::{SessionMiddleware, config::PersistentSession, storage::CookieSessionStore};
+use actix_web::{App, HttpServer, cookie::Key, web};
 use dotenvy::dotenv;
 use routes::api::login::login as login_post;
 use routes::api::logout::logout;
@@ -35,12 +36,27 @@ async fn main() -> std::io::Result<()> {
         .expect("Failed to connect to the database");
     ensure_admin_user(&db_pool).await;
 
+    let session_key_str = env::var("SESSION_KEY").expect("SESSION_KEY not set in .env");
+    let session_key = Key::from(session_key_str.as_bytes());
+    let is_production = env::var("APP_ENV").unwrap_or_default() == "production";
+
     HttpServer::new(move || {
+        let session_middleware =
+            SessionMiddleware::builder(CookieSessionStore::default(), session_key.clone())
+                .cookie_name("rfinance_app".to_string())
+                .cookie_secure(is_production)
+                .session_lifecycle(
+                    PersistentSession::default()
+                        .session_ttl(actix_web::cookie::time::Duration::days(27)),
+                )
+                .build();
+
         App::new()
             .app_data(web::Data::new(db_pool.clone()))
             .wrap(actix_web::middleware::from_fn(
                 middleware::auth::check_session,
             ))
+            .wrap(session_middleware)
             .service(admin)
             .service(index)
             .service(login)
