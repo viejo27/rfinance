@@ -1,8 +1,10 @@
-mod routes;
 mod middleware;
+mod role;
+mod routes;
 
 use actix_session::{SessionMiddleware, config::PersistentSession, storage::CookieSessionStore};
 use actix_web::{App, HttpServer, cookie::Key, web};
+use actix_web_grants::GrantsMiddleware;
 use dotenvy::dotenv;
 use routes::api::{api_login, api_logout, api_register};
 use routes::web::{admin_handler, index_handler, login_handler, register_handler};
@@ -34,11 +36,14 @@ async fn main() -> std::io::Result<()> {
                 )
                 .build();
 
+        let grants = GrantsMiddleware::with_extractor(middleware::grants::extract);
+
         App::new()
             .app_data(web::Data::new(db_pool.clone()))
             .wrap(actix_web::middleware::from_fn(
                 middleware::auth::check_session,
             ))
+            .wrap(grants)
             .wrap(session_middleware)
             .service(admin_handler)
             .service(index_handler)
@@ -78,6 +83,13 @@ async fn ensure_admin_user(pool: &PgPool) {
                 .execute(pool)
                 .await
                 .unwrap();
+            sqlx::query(
+                "INSERT INTO user_data (user_id, role) VALUES (1, 'admin')
+                 ON CONFLICT (user_id) DO UPDATE SET role = 'admin'",
+            )
+            .execute(pool)
+            .await
+            .unwrap();
         }
         None => {
             let password_hashed = bcrypt::hash(&admin_password, bcrypt::DEFAULT_COST)
@@ -88,6 +100,13 @@ async fn ensure_admin_user(pool: &PgPool) {
                 .execute(pool)
                 .await
                 .unwrap();
+            sqlx::query(
+                "INSERT INTO user_data (user_id, role) VALUES (1, 'admin')
+                 ON CONFLICT (user_id) DO UPDATE SET role = 'admin'",
+            )
+            .execute(pool)
+            .await
+            .unwrap();
         }
     }
 }

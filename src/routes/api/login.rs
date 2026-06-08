@@ -26,6 +26,20 @@ async fn login(
         Some((hashed_password,)) => {
             if bcrypt::verify(&body.password, &hashed_password).unwrap_or(false) {
                 session.insert("user_email", &body.email).unwrap();
+
+                let role: Option<(String,)> = sqlx::query_as(
+                    "SELECT ud.role FROM users u
+                     LEFT JOIN user_data ud ON ud.user_id = u.id
+                     WHERE u.email = $1",
+                )
+                .bind(&body.email)
+                .fetch_optional(pool.get_ref())
+                .await
+                .unwrap();
+
+                let user_role = role.map(|(r,)| r).unwrap_or_else(|| "user".to_string());
+                session.insert("user_role", &user_role).unwrap();
+
                 HttpResponse::Ok().body("Login exitoso")
             } else {
                 HttpResponse::Unauthorized().body("Credenciales incorrectas")
