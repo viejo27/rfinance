@@ -5,15 +5,25 @@ Guidelines for AI agents working on this codebase.
 ## Project Overview
 
 - **Type**: Rust web application (actix-web 4.12.1)
-- **Database**: PostgreSQL with sqlx 0.8.6
+- **Database**: PostgreSQL with sqlx 0.9.0
 - **Templating**: askama 0.15.4
 - **Edition**: Rust 2024
+
+## Prerequisites
+
+- Rust 1.94 or newer (MSRV of sqlx 0.9)
+- A running PostgreSQL server with the target database created
+- `sqlx-cli` only for authoring migrations (`sqlx migrate add`); the app applies
+  migrations by itself at startup, see *Database Migrations*
+
+A running database is needed **at build time**, not just at runtime, because
+`src/routes/web/admin.rs` uses the compile-time checked `sqlx::query!` macro.
 
 ## Build, Lint, and Test Commands
 
 ```bash
 # Build
-cargo build              # debug build
+cargo build              # debug build (requires DATABASE_URL reachable)
 cargo build --release    # release build
 
 # Run (listens on 127.0.0.1:8080)
@@ -23,7 +33,6 @@ cargo run
 cargo test                              # run all tests
 cargo test test_name                    # run single test by name
 cargo test -- --nocapture               # show output
-cargo test --test integration_tests     # run specific test file
 
 # Linting
 cargo clippy                            # lint
@@ -31,6 +40,9 @@ cargo clippy -- -D warnings             # warnings as errors
 cargo fmt --check                       # check formatting
 cargo fmt                               # format code
 ```
+
+There are no automated tests in the repository yet. When adding some, prefer
+`#[sqlx::test]` so each test gets an isolated, migrated database.
 
 ## Code Style Guidelines
 
@@ -49,7 +61,7 @@ cargo fmt                               # format code
 use std::env;
 use actix_web::{App, HttpServer, web};
 use sqlx::PgPool;
-use crate::models::User;
+use crate::role::Role;
 ```
 
 ### Error Handling
@@ -61,6 +73,10 @@ use crate::models::User;
 let database_url = env::var("DATABASE_URL").expect("DATABASE_URL not set in .env");
 let result = query.fetch_one(&pool).await?;
 ```
+
+Startup-only code (`main.rs`, `ensure_admin_user`) may `expect()`, because a
+failure there aborts the process anyway. Route handlers should not `unwrap()`
+database errors: return a `500` instead.
 
 ### Async/Await
 - Use `async` for route handlers
@@ -90,40 +106,95 @@ struct IndexTemplate<'a> { name: &'a str, }
 ```
 
 ### Database (sqlx)
-- Use `sqlx::query!` for compile-time checked queries
+
+The codebase mostly uses the **runtime** queries with a type annotation on the
+result, which keeps the call site readable and avoids turbofish churn:
+
+```rust
+let existing: Option<(i32,)> = sqlx::query_as("SELECT id FROM users WHERE email = $1")
+    .bind(&email)
+    .fetch_optional(pool)
+    .await?;
+```
+
+- Use `sqlx::query!` / `sqlx::query_as!` (macros) when you want compile-time
+  checked columns; they require a reachable database, or a generated `.sqlx/`
+  offline cache
 - Use `PgPool` for connection pooling
 - Pass pool via `web::Data<PgPool>`, get reference with `db_pool.get_ref()`
+- The `sqlx` dependency enables `runtime-async-std`, which sqlx 0.9 still
+  supports. actix-web runs on tokio, so `runtime-tokio` is the more natural
+  pairing; the async-std crate itself is deprecated upstream, and sqlx 0.9
+  added `runtime-smol` and `runtime-async-global-executor` as alternatives
 
 ### Database Migrations
-The project uses sqlx which supports migrations. Run migrations before starting:
+
+Migrations live in `migrations/` and are applied **automatically at startup** by
+`sqlx::migrate!().run(&db_pool)` in `src/main.rs`, which runs before
+`ensure_admin_user()`. A brand-new database needs no manual migration step.
+
+Install the CLI to author or inspect migrations:
+
 ```bash
-# Create migration (if needed)
-sqlx migrate add migration_name
+# Arch / CachyOS: prebuilt binary, same version as the library in Cargo.toml
+paru -S sqlx-cli
+
+# Building from source instead: pin the version to Cargo.toml, and skip the
+# drivers this project does not use (default features add mysql, sqlite,
+# native-tls and completions)
+cargo install sqlx-cli --version 0.9.0 --no-default-features --features postgres,rustls
 ```
+
+```bash
+sqlx migrate info            # show applied and pending migrations
+sqlx migrate run             # apply pending migrations without starting the app
+sqlx migrate add <name> -r   # author a new migration as an up/down pair
+sqlx migrate revert          # run the .down.sql of the most recent migration
+```
+
+- The CLI reads `DATABASE_URL` from `.env` automatically
+- Keep `sqlx-cli` and the `sqlx` crate on the same version: the `.sqlx/` cache
+  produced by `sqlx prepare` is not portable between versions
+- Naming convention is `<TIMESTAMP>_<description>.up.sql` plus `.down.sql`;
+  keep every migration reversible so `sqlx migrate revert` always works
+- `sqlx::migrate!()` embeds the directory into the binary at compile time, so
+  rebuild after adding or editing a migration
+- Never edit a migration that is already applied: sqlx compares checksums and
+  fails with `VersionMismatch`
 
 ## Project Structure
 
 ```
 rfinance_app/
-├── Cargo.toml          # Dependencies
+├── Cargo.toml              # Dependencies
 ├── Cargo.lock
-├── .env                # Environment (not committed)
-├── .gitignore
+├── .env                    # Local config (gitignored, never commit)
+├── .env.example            # Template for .env
+├── migrations/             # sqlx migrations (up/down pairs)
 ├── src/
-│   ├── main.rs         # Entry point
-│   └── routes/web/
-│       └── home.rs     # Route handlers
-└── templates/
-    └── index.html      # HTML templates
+│   ├── main.rs             # Pool, migrations, admin bootstrap, HTTP server
+│   ├── role.rs             # `Role` enum (Admin/User) parsed from the session
+│   ├── middleware/
+│   │   ├── auth.rs         # `check_session`: redirects and public paths
+│   │   └── grants.rs       # `extract`: role extractor for actix-web-grants
+│   └── routes/
+│       ├── mod.rs
+│       ├── api/            # JSON endpoints: login, register, logout
+│       └── web/            # HTML endpoints: home, login, register, admin
+├── static/
+│   ├── css/style.css
+│   └── js/                 # home.js, login.js, register.js
+└── templates/              # index.html, login.html, register.html, admin.html
 ```
 
 ## Common Tasks
 
 ### Add a New Route
-1. Create module in `src/routes/web/`
-2. Declare in `src/main.rs`
-3. Define handler with HTTP method attribute
-4. Register route in `main.rs`
+1. Create the handler module in `src/routes/web/` (HTML) or `src/routes/api/` (JSON)
+2. Declare it with `pub mod` in that directory's `mod.rs`
+3. Re-export it with a `*_handler` / `api_*` alias in the same `mod.rs`
+4. Register the service with `.service(...)` in `src/main.rs`
+5. If the path must bypass the session redirect, add it to `middleware/auth.rs`
 
 ### Add a Dependency
 1. Add to `[dependencies]` in `Cargo.toml`
@@ -132,13 +203,18 @@ rfinance_app/
 
 ## Configuration
 
-`.env` file requires:
+`.env` file requires (copy from `.env.example`):
 - `DATABASE_URL`: PostgreSQL connection string
+- `ADMIN_USER`: email of the account `ensure_admin_user` creates and promotes
+- `ADMIN_PASSWORD`: password for that account, only used when creating it
+- `SESSION_KEY`: 64 bytes of hex, used as the cookie signing key
+  (`openssl rand -hex 64`)
+- `APP_ENV`: `production` enables secure cookies, anything else is development
 
 ## Notes
 
-- All routes currently in `src/routes/web/home.rs`
-- Requires PostgreSQL database
+- Web (HTML) routes live in `src/routes/web/`, JSON routes in `src/routes/api/`
+- Requires a PostgreSQL database, running even for `cargo build`
 - Template errors fail at compile time
 - Use `cargo clippy` before commits
 - Never commit `.env` files
