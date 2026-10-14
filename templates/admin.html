@@ -9,6 +9,11 @@
 	<body>
 		<button id="logoutBtn" class="logout-btn">Logout</button>
 		<h1>Aguante el {{ number }}!!!</h1>
-		<script src="/js/home.js"></script>
+		<script>
+			document.getElementById('logoutBtn').addEventListener('click', async function () {
+				await fetch('/api/logout', { method: 'POST' });
+				window.location.href = '/login';
+			});
+		</script>
 	</body>
 </html>

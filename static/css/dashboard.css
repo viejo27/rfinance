@@ -1,0 +1,919 @@
+/* ============================================================
+   RFINANCE — HOME · tablero + libro (mode Operate)
+   Se apoya en los tokens y componentes de style.css.
+   ============================================================ */
+
+.app {
+	padding-bottom: 64px;
+}
+
+/* ---------- Barra shell ---------- */
+
+.shellbar {
+	position: sticky;
+	top: 0;
+	z-index: 20;
+	background: var(--tinta);
+	color: var(--papel);
+	border-bottom: 4px solid var(--rojo);
+}
+
+.shell-inner {
+	max-width: 1280px;
+	margin: 0 auto;
+	padding: 0 24px;
+	height: 60px;
+	display: grid;
+	grid-template-columns: auto 1fr auto;
+	align-items: center;
+	gap: 24px;
+}
+
+.marca {
+	font-family: var(--stencil);
+	font-size: 1.55rem;
+	line-height: 1;
+	color: var(--papel);
+	text-decoration: none;
+	letter-spacing: 0.02em;
+}
+
+.marca:hover {
+	background: transparent;
+	color: var(--rojo-grafico);
+}
+
+.nav-secciones {
+	display: flex;
+	gap: 4px;
+	list-style: none;
+	min-width: 0;
+	overflow-x: auto;
+	scrollbar-width: none;
+}
+
+.nav-secciones::-webkit-scrollbar {
+	display: none;
+}
+
+.nav-link {
+	font-size: 0.72rem;
+	font-weight: 500;
+	text-transform: uppercase;
+	letter-spacing: 0.08em;
+	color: var(--papel);
+	text-decoration: none;
+	padding: 6px 10px;
+	border: 2px solid transparent;
+	white-space: nowrap;
+}
+
+.nav-link[aria-disabled='true'] {
+	color: color-mix(in srgb, var(--papel) 55%, var(--tinta));
+	cursor: not-allowed;
+}
+
+.nav-link[aria-disabled='true']:hover {
+	background: transparent;
+	color: color-mix(in srgb, var(--papel) 55%, var(--tinta));
+}
+
+.nav-actual {
+	border-color: var(--rojo-grafico);
+	background: var(--rojo);
+}
+
+.usu-shell {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	min-width: 0;
+}
+
+.usu-mail {
+	font-size: 0.78rem;
+	color: color-mix(in srgb, var(--papel) 75%, var(--tinta));
+	max-width: 24ch;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.btn-salir {
+	/* destructiva: aislada, en outline hasta foco deliberado */
+	background: transparent;
+	border: 2px solid color-mix(in srgb, var(--papel) 60%, var(--tinta));
+	color: var(--papel);
+	padding: 8px 14px;
+	margin-left: 8px;
+}
+
+.btn-salir:hover,
+.btn-salir:focus-visible {
+	background: var(--papel);
+	border-color: var(--papel);
+	color: var(--tinta);
+	outline-color: var(--rojo-grafico);
+}
+
+/* ---------- Marco general ---------- */
+
+.marco {
+	max-width: 1280px;
+	margin: 0 auto;
+	padding: 0 24px;
+}
+
+/* franja de datos en el margen, columnas mono (disciplina ikeda) */
+.franja-margen {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0 32px;
+	padding: 10px 0;
+	border-bottom: 2px solid var(--tinta);
+	margin-bottom: 28px;
+	font-size: 0.72rem;
+}
+
+.franja-margen span {
+	color: var(--tinta-2);
+}
+
+.franja-margen b {
+	color: var(--rojo);
+	font-weight: 500;
+}
+
+/* ---------- Título de sección: la banda diagonal ES el título ---------- */
+
+.banda {
+	position: relative;
+	background: var(--rojo);
+	color: var(--papel);
+	padding: 10px 48px 10px 18px;
+	margin: 0 0 22px;
+	clip-path: polygon(0 0, calc(100% - var(--corte)) 0, 100% 100%, 0 100%);
+	max-width: 42ch;
+}
+
+.banda .titulo-seccion {
+	color: var(--papel);
+}
+
+/* ---------- Banda de mando ---------- */
+
+.mando {
+	display: grid;
+	grid-template-columns: 1.1fr 1.1fr 1.6fr;
+	gap: 22px;
+	margin-bottom: 56px;
+}
+
+.mando-total {
+	min-width: 0;
+	background: var(--tinta);
+	color: var(--papel);
+	border: 3px solid var(--tinta);
+	padding: 18px 20px 14px;
+	position: relative;
+	overflow: hidden;
+}
+
+.mando-total::after {
+	content: '';
+	position: absolute;
+	bottom: -18px;
+	right: -18px;
+	width: 74px;
+	height: 34px;
+	background: var(--rojo);
+	transform: rotate(-30deg);
+}
+
+.mando-total .rotulo {
+	color: color-mix(in srgb, var(--papel) 65%, var(--tinta));
+}
+
+.total-num {
+	display: block;
+	font-family: var(--display);
+	font-size: clamp(2.8rem, 5vw, 6rem);
+	line-height: 1;
+	font-variant-numeric: tabular-nums;
+	letter-spacing: 0.01em;
+	white-space: nowrap;
+	margin-top: 10px;
+}
+
+.total-sub {
+	display: block;
+	margin-top: 8px;
+	font-size: 0.74rem;
+	color: color-mix(in srgb, var(--papel) 65%, var(--tinta));
+}
+
+.total-neg {
+	background: var(--rojo);
+	border-color: var(--rojo);
+}
+
+.mando-histo {
+	min-width: 0;
+	background: var(--papel-claro);
+	border: 3px solid var(--tinta);
+	padding: 16px 18px;
+}
+
+.mando-histo .rotulo {
+	display: flex;
+	justify-content: space-between;
+}
+
+.histo {
+	display: block;
+	width: 100%;
+	height: 118px;
+	margin-top: 10px;
+}
+
+/* ---------- Formulario de carga rápida ---------- */
+
+.captura {
+	grid-column: 1 / -1;
+	min-width: 0;
+	background: var(--papel-claro);
+	border: 3px solid var(--tinta);
+	padding: 14px 18px 16px;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: 6px 16px;
+}
+
+.captura-titulo {
+	flex-basis: 100%;
+	color: var(--tinta-2);
+}
+
+.captura .campo-label {
+	margin-top: 0;
+	margin-bottom: 4px;
+	font-size: 0.66rem;
+}
+
+.captura .campo {
+	padding: 9px 10px;
+	font-size: 0.88rem;
+}
+
+.cap-fecha { width: 158px; }
+.cap-monto { width: 130px; }
+.cap-moneda { width: 96px; }
+.cap-tipo { width: 190px; }
+.cap-cuenta { width: 170px; }
+.cap-cat { width: 160px; }
+.cap-concepto { flex: 1 1 220px; min-width: 200px; }
+
+.cap-campo select.campo {
+	width: 100%;
+	text-overflow: ellipsis;
+}
+
+.tipo-pares {
+	display: flex;
+	gap: 8px;
+	margin-top: 8px;
+}
+
+.tipo-opcion {
+	flex: 1;
+}
+
+.tipo-opcion input {
+	position: absolute;
+	opacity: 0;
+	pointer-events: none;
+}
+
+.tipo-opcion span {
+	display: block;
+	text-align: center;
+	padding: 8px 4px;
+	border: 2px solid var(--tinta);
+	font-size: 0.78rem;
+	font-weight: 500;
+	text-transform: uppercase;
+	letter-spacing: 0.06em;
+	cursor: pointer;
+}
+
+.tipo-opcion input:checked + span {
+	background: var(--tinta);
+	color: var(--papel);
+}
+
+.tipo-opcion input:focus-visible + span {
+	outline: 3px solid var(--rojo);
+	outline-offset: 2px;
+}
+
+.captura .btn-primario {
+	align-self: flex-end;
+	padding: 11px 26px;
+	margin: 0 0 0 auto;
+}
+
+.captura-aviso {
+	flex-basis: 100%;
+	margin-top: 8px;
+	font-size: 0.8rem;
+}
+
+/* ---------- Cuentas ---------- */
+
+.cuentas {
+	display: grid;
+	grid-template-columns: repeat(4, 1fr);
+	gap: 16px;
+	margin-bottom: 56px;
+}
+
+.cuenta {
+	border: 3px solid var(--tinta);
+	background: var(--papel-claro);
+	padding: 14px 16px 12px;
+	position: relative;
+}
+
+.cuenta::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 4px;
+	background: var(--tinta);
+}
+
+.cuenta-malla {
+	background: var(--concreto);
+	background-image: url('/textures/concreto.png');
+	background-blend-mode: multiply;
+}
+
+.cuenta-malla .rotulo {
+	color: var(--tinta);
+}
+
+.cuenta .rotulo {
+	color: var(--tinta-2);
+}
+
+.cuenta-saldo {
+	display: block;
+	font-family: var(--display);
+	font-size: 1.9rem;
+	line-height: 1;
+	font-variant-numeric: tabular-nums;
+	margin-top: 8px;
+}
+
+.cuenta-neg {
+	color: var(--rojo);
+}
+
+.cuenta-chip {
+	display: inline-block;
+	margin-top: 8px;
+	font-size: 0.66rem;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	background: var(--tinta);
+	color: var(--papel);
+	padding: 2px 8px;
+}
+
+/* ---------- Libro contable ---------- */
+
+.libro-filtros {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 10px;
+	align-items: center;
+	margin-bottom: 16px;
+}
+
+.libro-filtros .campo {
+	width: auto;
+	min-width: 170px;
+	padding: 8px 10px;
+	font-size: 0.85rem;
+}
+
+.libro-filtros select.campo {
+	padding-right: 40px;
+}
+
+.libro-filtros .campo-ancha {
+	flex: 1;
+	min-width: 200px;
+}
+
+.libro-conteo {
+	margin-left: auto;
+	font-size: 0.74rem;
+	color: var(--tinta-2);
+}
+
+.tabla-envoltura {
+	border: 3px solid var(--tinta);
+	background: var(--papel-claro);
+	overflow-x: auto;
+}
+
+table.libro {
+	width: 100%;
+	border-collapse: collapse;
+	min-width: 760px;
+}
+
+table.libro th {
+	font-size: 0.68rem;
+	font-weight: 500;
+	text-transform: uppercase;
+	letter-spacing: 0.09em;
+	text-align: left;
+	background: var(--tinta);
+	color: var(--papel);
+	padding: 10px 14px;
+}
+
+table.libro th[data-ordena] {
+	padding: 0;
+}
+
+table.libro th[data-ordena] button {
+	display: block;
+	width: 100%;
+	text-align: inherit;
+	padding: 10px 14px;
+	background: transparent;
+	border: 0;
+	border-radius: 0;
+	color: inherit;
+	font: inherit;
+	text-transform: uppercase;
+	letter-spacing: inherit;
+	cursor: pointer;
+}
+
+table.libro th[data-ordena] button::after {
+	content: '';
+	display: inline-block;
+	margin-left: 8px;
+	border: 5px solid transparent;
+	border-top: 6px solid color-mix(in srgb, var(--papel) 60%, var(--tinta));
+	vertical-align: middle;
+}
+
+table.libro th[aria-sort='ascending'] button::after {
+	border-top: 0;
+	border-bottom: 6px solid var(--rojo-grafico);
+	transform: translateY(-2px);
+}
+
+table.libro th[aria-sort='descending'] button::after {
+	border-top: 6px solid var(--rojo-grafico);
+}
+
+table.libro th:last-child {
+	text-align: right;
+}
+
+table.libro td {
+	padding: 9px 14px;
+	border-top: 2px solid var(--papel);
+	font-size: 0.88rem;
+	vertical-align: baseline;
+}
+
+table.libro tbody tr {
+	border-top: 2px solid color-mix(in srgb, var(--tinta) 22%, var(--papel-claro));
+}
+
+table.libro tbody tr:nth-child(odd) {
+	background: color-mix(in srgb, var(--papel) 55%, var(--papel-claro));
+}
+
+table.libro td:has(.monto) {
+	background: inherit;
+}
+
+.celda-monto {
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+	font-weight: 500;
+	white-space: nowrap;
+}
+
+.celda-fecha {
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+	width: 8.5ch;
+}
+
+.celda-cat {
+	white-space: nowrap;
+}
+
+.celda-concepto {
+	position: relative;
+}
+
+.celda-cuenta {
+	color: var(--tinta-2);
+	white-space: nowrap;
+}
+
+.egreso {
+	color: var(--rojo);
+}
+
+.ingreso {
+	color: var(--ocre);
+	font-weight: 700;
+}
+
+.sello-demo-h {
+	font-size: 0.66rem;
+	letter-spacing: 0.1em;
+	background: var(--rojo);
+	color: var(--papel);
+	padding: 1px 6px;
+	margin-right: 8px;
+}
+
+.libro-vacio {
+	padding: 26px 14px;
+	text-align: center;
+	border-top: 2px solid color-mix(in srgb, var(--tinta) 22%, var(--papel-claro));
+	background: var(--papel-claro);
+	font-size: 0.85rem;
+}
+
+.libro-vacio .btn {
+	margin-top: 14px;
+}
+
+/* El Sello — movimiento firma: corte duro de dos fotogramas */
+
+@keyframes sello-cae {
+	from {
+		background: var(--rojo);
+		color: var(--papel);
+	}
+	to {
+		background: transparent;
+		color: var(--tinta);
+	}
+}
+
+.fila-nueva {
+	animation: sello-cae 180ms var(--paso) 1;
+}
+
+@keyframes total-brusco {
+	from {
+		background: var(--rojo-grafico);
+	}
+	to {
+		background: var(--tinta);
+	}
+}
+
+.total-flash {
+	animation: total-brusco 180ms var(--paso) 1;
+}
+
+.estampa {
+	position: absolute;
+	right: 8px;
+	top: 50%;
+	font-size: 0.66rem;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	border: 2px solid var(--rojo);
+	color: var(--rojo);
+	background: var(--papel-claro);
+	padding: 0 6px;
+	transform: translateY(-50%) rotate(-6deg);
+	animation: estampa-pop 90ms var(--paso) 1;
+	pointer-events: none;
+}
+
+@keyframes estampa-pop {
+	from {
+		transform: translateY(-50%) rotate(-6deg) scale(1.9);
+		opacity: 0.4;
+	}
+	to {
+		transform: translateY(-50%) rotate(-6deg) scale(1);
+		opacity: 1;
+	}
+}
+
+/* ---------- Presupuestos ---------- */
+
+.presu {
+	list-style: none;
+	display: grid;
+	gap: 14px;
+	margin-bottom: 56px;
+}
+
+.presu-item {
+	display: grid;
+	grid-template-columns: 24ch minmax(0, 1fr) auto;
+	gap: 20px;
+	align-items: center;
+	padding: 12px 16px;
+	border: 3px solid var(--tinta);
+	background: var(--papel-claro);
+}
+
+.presu-nombre {
+	font-size: 0.8rem;
+	font-weight: 500;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+}
+
+.presu-barra {
+	height: 20px;
+	background: var(--concreto);
+	border: 2px solid var(--tinta);
+	position: relative;
+}
+
+.presu-barra::after {
+	content: '';
+	position: absolute;
+	inset: 0 auto 0 0;
+	width: min(var(--pct), 100%);
+	background: var(--ocre-barra);
+}
+
+.presu-excedido .presu-barra::after {
+	background: var(--rojo);
+}
+
+.presu-excedido .presu-barra {
+	border-color: var(--rojo);
+}
+
+.presu-lectura {
+	font-size: 0.78rem;
+	white-space: nowrap;
+}
+
+.presu-pct {
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+}
+
+.etiqueta-excedido {
+	background: var(--rojo);
+	color: var(--papel);
+	font-size: 0.66rem;
+	font-weight: 700;
+	letter-spacing: 0.1em;
+	padding: 1px 6px;
+	margin-left: 8px;
+}
+
+/* ---------- Carteles estadísticos (gráficos) ---------- */
+
+.carteles {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 22px;
+	margin-bottom: 56px;
+}
+
+.cartel {
+	border: 3px solid var(--tinta);
+	background: var(--papel-claro);
+	padding: 18px 18px 14px;
+}
+
+.cartel-titulos {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	margin-bottom: 12px;
+}
+
+.cartel-head {
+	font-family: var(--display);
+	font-size: clamp(1.6rem, 2.6vw, 2.3rem);
+	line-height: 1;
+	text-transform: uppercase;
+}
+
+.cartel-head small {
+	display: block;
+	font-family: var(--mono);
+	font-size: 0.66rem;
+	font-weight: 500;
+	letter-spacing: 0.1em;
+	text-transform: none;
+	color: var(--tinta-2);
+	margin-bottom: 4px;
+}
+
+.grafico {
+	display: block;
+	width: 100%;
+	height: 240px;
+}
+
+.grafico text {
+	font-family: var(--mono);
+	font-size: 9px;
+	fill: var(--tinta-2);
+}
+
+.grafico .eje {
+	stroke: var(--tinta);
+	stroke-width: 2;
+}
+
+.leyenda {
+	display: flex;
+	gap: 22px;
+	margin-top: 10px;
+	font-size: 0.72rem;
+}
+
+.leyenda i {
+	display: inline-block;
+	width: 12px;
+	height: 12px;
+	margin-right: 6px;
+	vertical-align: -1px;
+}
+
+.ley-inge {
+	background: var(--ocre-barra);
+}
+
+.ley-egre {
+	background: var(--rojo);
+}
+
+/* ---------- Pie ---------- */
+
+.pie {
+	border-top: 4px solid var(--tinta);
+	margin-top: 24px;
+	padding-top: 18px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px 32px;
+	font-size: 0.74rem;
+	color: var(--tinta-2);
+}
+
+.pie b {
+	color: var(--rojo);
+	font-weight: 500;
+}
+
+.pie .marca {
+	color: var(--tinta);
+	font-size: 1rem;
+	margin-left: auto;
+}
+
+/* ---------- Responsive: la grilla recompensa en celdas completas ---------- */
+
+@media (max-width: 1024px) {
+	.mando {
+		grid-template-columns: 1fr 1fr;
+	}
+
+	.mando-histo {
+		grid-column: span 2;
+	}
+
+	.captura {
+		grid-column: span 2;
+		box-shadow: none;
+	}
+
+	.cuentas {
+		grid-template-columns: repeat(2, 1fr);
+	}
+
+	.carteles {
+		grid-template-columns: 1fr;
+	}
+
+	.presu-item {
+		grid-template-columns: 1fr;
+		gap: 8px;
+	}
+}
+
+@media (max-width: 640px) {
+	.marco {
+		padding: 0 14px;
+	}
+
+	.shell-inner {
+		grid-template-columns: 1fr auto;
+		height: auto;
+		padding: 10px 14px;
+		gap: 10px;
+	}
+
+	.nav-secciones {
+		grid-column: 1 / -1;
+		order: 3;
+		padding-bottom: 4px;
+	}
+
+	.mando {
+		grid-template-columns: 1fr;
+	}
+
+	.mando-histo,
+	.captura {
+		grid-column: auto;
+	}
+
+	.captura {
+		order: -1;
+	}
+
+	.cuentas {
+		grid-template-columns: 1fr;
+	}
+
+	.usu-mail {
+		display: none;
+	}
+
+	/* El libro se recompone en celdas completas: fecha, concepto y monto siempre visibles */
+	table.libro {
+		min-width: 0;
+	}
+
+	table.libro thead {
+		display: none;
+	}
+
+	table.libro tbody tr {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		grid-template-areas:
+			'fecha monto'
+			'concepto concepto'
+			'cat cuenta';
+		gap: 2px 12px;
+		padding: 12px 14px;
+	}
+
+	table.libro td {
+		border-top: 0;
+		padding: 0;
+	}
+
+	.celda-fecha {
+		grid-area: fecha;
+		font-size: 0.72rem;
+		color: var(--tinta-2);
+		align-self: center;
+	}
+
+	.celda-monto {
+		grid-area: monto;
+		font-size: 1rem;
+	}
+
+	td.celda-concepto {
+		grid-area: concepto;
+		font-weight: 500;
+	}
+
+	.celda-cat {
+		grid-area: cat;
+		font-size: 0.72rem;
+	}
+
+	.celda-cuenta {
+		grid-area: cuenta;
+		font-size: 0.72rem;
+		text-align: right;
+	}
+}

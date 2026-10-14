@@ -1,0 +1,163 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-14T04:59:30Z",
+  "title": "Design System: RFinance",
+  "extensions": {
+    "colorMeta": {
+      "rojo": { "role": "primary", "displayName": "Flag Oxide Red", "canonical": "#a82317", "tonalRamp": ["#7e140c", "#a82317", "#c2331f"] },
+      "rojo-hondo": { "role": "primary-deep", "displayName": "Deep Oxide Red", "canonical": "#7e140c", "tonalRamp": ["#7e140c", "#a82317", "#c2331f"] },
+      "rojo-grafico": { "role": "primary-graphic", "displayName": "Bright Poster Red", "canonical": "#c2331f", "tonalRamp": ["#7e140c", "#a82317", "#c2331f"] },
+      "ocre": { "role": "secondary", "displayName": "Ochre", "canonical": "#7e5300", "tonalRamp": ["#7e5300", "#a97209"] },
+      "ocre-barra": { "role": "secondary-bar", "displayName": "Warm Ochre", "canonical": "#a97209", "tonalRamp": ["#7e5300", "#a97209"] },
+      "concreto": { "role": "tertiary", "displayName": "Bare Concrete", "canonical": "#a8a49a", "tonalRamp": ["#a8a49a"] },
+      "tinta": { "role": "neutral", "displayName": "Ink Black", "canonical": "#1b1813", "tonalRamp": ["#1b1813", "#4e463b"] },
+      "tinta-2": { "role": "neutral-quiet", "displayName": "Spent Ink", "canonical": "#4e463b", "tonalRamp": ["#1b1813", "#4e463b"] },
+      "papel": { "role": "neutral", "displayName": "Aged Bone Paper", "canonical": "#ede6d3", "tonalRamp": ["#ede6d3", "#f6f1e2"] },
+      "papel-claro": { "role": "neutral-raised", "displayName": "Pale Bone Card", "canonical": "#f6f1e2", "tonalRamp": ["#ede6d3", "#f6f1e2"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Anton — Poster Voice", "purpose": "Numerals and button type in capitals: hero totals clamp(2.8rem,5vw,6rem), balances 1.9rem, chart heads, 1.05rem buttons. Never inside tables." },
+      "stencil": { "displayName": "Saira Stencil One — Stamp Voice", "purpose": "Wordmark (1.55rem on ink, 2.6rem on auth) and section titles (1.5rem) inside red bands only." },
+      "body": { "displayName": "JetBrains Mono — Ledger Voice", "purpose": "Default page voice, 15px/1.55; every form value and table cell." },
+      "label": { "displayName": "Rotulo — Micro-caps Label", "purpose": "Field labels, marginal strips, footers: 0.7rem weight 500 uppercase, letter-spacing 0.09em. Chips run hotter: 0.66rem/700/0.1em." },
+      "data": { "displayName": "Datos — Tabular Data", "purpose": "font-variant-numeric: tabular-nums on all amounts, dates (8.5ch fixed), counts, percentages." }
+    },
+    "shadows": [
+      { "name": "control-lift", "value": "4px 4px 0 var(--tinta)", "purpose": "Hard offset under primary buttons only (.btn-primario); cancelled on :active with translate(2px,2px)." },
+      { "name": "surface-lift", "value": "8px 8px 0 var(--tinta)", "purpose": "Sheet-set-on-desk depth for the auth box (.auth-caja) and admin panel (.panel-admin). Zero blur, ink color, offset only." }
+    ],
+    "motion": [
+      { "name": "paso", "value": "steps(2, end)", "purpose": "The only timing function in the system (--paso). All state change is a two-frame hard cut; controls otherwise carry transition: none." },
+      { "name": "sello-cae", "value": "sello-cae 180ms steps(2, end) 1", "purpose": "New ledger row cuts from solid rojo block to paper — the stamp lands." },
+      { "name": "total-brusco", "value": "total-brusco 180ms steps(2, end) 1", "purpose": "Totals block background cuts rojo-grafico to tinta when its currency is touched." },
+      { "name": "estampa-pop", "value": "estampa-pop 90ms steps(2, end) 1", "purpose": "ANOTADO rubber stamp snaps from scale 1.9 / 0.4 opacity to rest (rotate -6deg) in one hard frame." },
+      { "name": "sello-marca", "value": "none", "purpose": "The stamp at rest has no motion; under prefers-reduced-motion animations are removed and the mark is not generated at all." }
+    ],
+    "breakpoints": [
+      { "name": "tablet", "value": "1024px" },
+      { "name": "phone", "value": "640px" },
+      { "name": "container", "value": "1280px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single command action (REGISTRAR, INGRESAR): red block, paper Anton capitals, hard ink lift shadow that cancels on press.",
+      "html": "<button class=\"ds-btn ds-btn-primario\">REGISTRAR</button>",
+      "css": ".ds-btn { display: inline-block; font-family: var(--display, 'Anton', 'Arial Narrow', sans-serif); font-size: 1.05rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 12px 22px; background: var(--papel-claro); color: var(--tinta); border: var(--grosor, 2px) solid var(--tinta); border-radius: 0; cursor: pointer; transition: none; } .ds-btn:hover { background: var(--tinta); color: var(--papel); } .ds-btn:active { transform: translate(2px, 2px); box-shadow: none !important; } .ds-btn:focus-visible { outline: 3px solid var(--rojo); outline-offset: 2px; } .ds-btn-primario { background: var(--rojo); border-color: var(--rojo); color: var(--papel); box-shadow: 4px 4px 0 var(--tinta); } .ds-btn-primario:hover { background: var(--rojo-hondo); border-color: var(--rojo-hondo); color: var(--papel); }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button",
+      "description": "Utility action on paper (LIMPIAR): pale card fill, ink border; hover inverts to a solid ink block with a hard cut, no fade.",
+      "html": "<button class=\"ds-btn\">LIMPIAR</button>",
+      "css": ".ds-btn { display: inline-block; font-family: var(--display, 'Anton', 'Arial Narrow', sans-serif); font-size: 1.05rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 12px 22px; background: var(--papel-claro); color: var(--tinta); border: var(--grosor, 2px) solid var(--tinta); border-radius: 0; cursor: pointer; transition: none; } .ds-btn:hover { background: var(--tinta); color: var(--papel); } .ds-btn:active { transform: translate(2px, 2px); box-shadow: none !important; } .ds-btn:focus-visible { outline: 3px solid var(--rojo); outline-offset: 2px; }"
+    },
+    {
+      "name": "Danger / Exit Button",
+      "kind": "button",
+      "refersTo": "button-danger",
+      "description": "Destructive isolation: outline at rest, resolves only on deliberate hover/focus. .btn-peligro fills red on paper contexts; .btn-salir fills paper on the ink shellbar.",
+      "html": "<button class=\"ds-btn-peligro\">ELIMINAR</button> <span class=\"ds-ink-strip\"><button class=\"ds-btn-salir\">SALIR</button></span>",
+      "css": ".ds-btn-peligro { display: inline-block; font-family: var(--display, 'Anton', 'Arial Narrow', sans-serif); font-size: 1.05rem; text-transform: uppercase; letter-spacing: 0.04em; padding: 12px 22px; background: transparent; border: var(--grosor, 2px) solid var(--tinta-2); color: var(--tinta-2); border-radius: 0; cursor: pointer; transition: none; } .ds-btn-peligro:hover, .ds-btn-peligro:focus-visible { background: var(--rojo); border-color: var(--rojo); color: var(--papel); } .ds-ink-strip { background: var(--tinta); display: inline-block; padding: 10px 12px; } .ds-btn-salir { display: inline-block; font-family: var(--display, 'Anton', 'Arial Narrow', sans-serif); text-transform: uppercase; letter-spacing: 0.04em; padding: 8px 14px; background: transparent; border: 2px solid color-mix(in srgb, var(--papel) 60%, var(--tinta)); color: var(--papel); border-radius: 0; cursor: pointer; margin-left: 8px; transition: none; } .ds-btn-salir:hover, .ds-btn-salir:focus-visible { background: var(--papel); border-color: var(--papel); color: var(--tinta); outline-color: var(--rojo-grafico); }"
+    },
+    {
+      "name": "Field + Select",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Ledger-grade input: pale card, 2px ink border, zero radius, mono type; select arrow is a pure-CSS triangle pair. Red caret and 3px red focus ring are global.",
+      "html": "<div class=\"ds-field-wrap\"><label class=\"ds-campo-label\" for=\"ds-monto\">MONTO</label><input class=\"ds-campo\" id=\"ds-monto\" type=\"text\" placeholder=\"0,00\"><label class=\"ds-campo-label\" for=\"ds-moneda\">MONEDA</label><select class=\"ds-campo ds-select\" id=\"ds-moneda\"><option>ARS</option><option>USD</option></select></div>",
+      "css": ".ds-field-wrap { max-width: 320px; background: var(--papel); color: var(--tinta); padding: 16px; } .ds-campo-label { display: block; margin: 18px 0 6px; font-family: var(--mono, 'JetBrains Mono', ui-monospace, monospace); font-size: 0.7rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.09em; } .ds-campo { width: 100%; padding: 11px 12px; font-family: var(--mono, 'JetBrains Mono', ui-monospace, 'DejaVu Sans Mono', monospace); font-size: 0.95rem; background: var(--papel-claro); color: var(--tinta); border: var(--grosor, 2px) solid var(--tinta); border-radius: 0; caret-color: var(--rojo); accent-color: var(--rojo); } .ds-campo::placeholder { color: var(--tinta-2); opacity: 1; } .ds-campo:focus-visible { outline: 3px solid var(--rojo); outline-offset: 2px; } .ds-select { appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--tinta) 50%), linear-gradient(135deg, var(--tinta) 50%, transparent 50%); background-position: calc(100% - 18px) 55%, calc(100% - 11px) 55%; background-size: 7px 7px; background-repeat: no-repeat; padding-right: 34px; }"
+    },
+    {
+      "name": "Section Band",
+      "kind": "custom",
+      "refersTo": "section-band",
+      "description": "The band IS the title: red block with the 26px single-cut corner, stencil type inside, capped at 42ch. No kicker above it, ever.",
+      "html": "<h2 class=\"ds-banda\"><span class=\"ds-banda-titulo\">Libro contable</span></h2>",
+      "css": ".ds-banda { position: relative; display: block; background: var(--rojo); color: var(--papel); padding: 10px 48px 10px 18px; margin: 0 0 22px; clip-path: polygon(0 0, calc(100% - var(--corte, 26px)) 0, 100% 100%, 0 100%); max-width: 42ch; } .ds-banda-titulo { font-family: var(--stencil, 'Saira Stencil One', 'Anton', sans-serif); font-size: 1.5rem; line-height: 1.1; letter-spacing: 0.02em; font-weight: 400; color: var(--papel); }"
+    },
+    {
+      "name": "Totals Block",
+      "kind": "card",
+      "refersTo": "total-block",
+      "description": "One per currency on the command band: ink block, Anton numeral, −30° red corner wedge. Deficit flips the block red; updates flash via a 180ms two-frame cut.",
+      "html": "<div class=\"ds-mando\"><span class=\"ds-rotulo\">TOTAL · ARS</span><span class=\"ds-total-num\">998.775</span><span class=\"ds-total-sub\">Efectivo · Banco Nación · Visa</span></div> <div class=\"ds-mando ds-mando--neg\"><span class=\"ds-rotulo\">TOTAL · USD</span><span class=\"ds-total-num\">−320.000</span><span class=\"ds-total-sub\">Reserva USD</span></div>",
+      "css": ".ds-mando { display: inline-block; width: 300px; vertical-align: top; margin-right: 22px; background: var(--tinta); color: var(--papel); border: 3px solid var(--tinta); padding: 18px 20px 14px; position: relative; overflow: hidden; } .ds-mando::after { content: ''; position: absolute; bottom: -18px; right: -18px; width: 74px; height: 34px; background: var(--rojo); transform: rotate(-30deg); } .ds-mando--neg { background: var(--rojo); border-color: var(--rojo); } .ds-rotulo { font-family: var(--mono, 'JetBrains Mono', ui-monospace, monospace); font-size: 0.7rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.09em; color: color-mix(in srgb, var(--papel) 65%, var(--tinta)); } .ds-total-num { display: block; font-family: var(--display, 'Anton', 'Arial Narrow', sans-serif); font-size: clamp(2.8rem, 5vw, 6rem); line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: 0.01em; margin-top: 10px; white-space: nowrap; } .ds-total-sub { display: block; margin-top: 8px; font-family: var(--mono, 'JetBrains Mono', ui-monospace, monospace); font-size: 0.74rem; color: color-mix(in srgb, var(--papel) 65%, var(--tinta)); } @keyframes ds-total-brusco { from { background: var(--rojo-grafico); } to { background: var(--tinta); } } .ds-total-flash { animation: ds-total-brusco 180ms steps(2, end) 1; }"
+    },
+    {
+      "name": "Account Panel",
+      "kind": "card",
+      "refersTo": "account-panel-concrete",
+      "description": "Framed tile with a 4px ink cap bar, Anton balance, ink currency chip. USD panels switch material to bare concrete with multiplied grain (texture lives in the app; token fill shown here).",
+      "html": "<div class=\"ds-cuenta\"><span class=\"ds-rotulo2\">EFECTIVO</span><span class=\"ds-cuenta-saldo\">84.520</span><span class=\"ds-cuenta-chip\">ARS</span></div> <div class=\"ds-cuenta ds-cuenta-malla\"><span class=\"ds-rotulo2\">RESERVA USD</span><span class=\"ds-cuenta-saldo ds-cuenta-neg\">−398.215</span><span class=\"ds-cuenta-chip\">USD</span></div>",
+      "css": ".ds-cuenta { display: inline-block; width: 240px; box-sizing: border-box; border: 3px solid var(--tinta); background: var(--papel-claro); padding: 14px 16px 12px; position: relative; margin-right: 16px; } .ds-cuenta::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--tinta); } .ds-cuenta-malla { background: var(--concreto); /* app layers url('/textures/concreto.png') with background-blend-mode: multiply */ } .ds-rotulo2 { font-family: var(--mono, 'JetBrains Mono', ui-monospace, monospace); font-size: 0.7rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.09em; color: var(--tinta-2); } .ds-cuenta-malla .ds-rotulo2 { color: var(--tinta); } .ds-cuenta-saldo { display: block; font-family: var(--display, 'Anton', 'Arial Narrow', sans-serif); font-size: 1.9rem; line-height: 1; font-variant-numeric: tabular-nums; margin-top: 8px; color: var(--tinta); } .ds-cuenta-neg { color: var(--rojo); } .ds-cuenta-chip { display: inline-block; margin-top: 8px; font-family: var(--mono, 'JetBrains Mono', ui-monospace, monospace); font-size: 0.66rem; font-weight: 700; letter-spacing: 0.1em; background: var(--tinta); color: var(--papel); padding: 2px 8px; }"
+    },
+    {
+      "name": "Budget Bar",
+      "kind": "custom",
+      "refersTo": "budget-bar-track",
+      "description": "Ruled budget row: 24ch name, concrete track with ochre fill at --pct, tabular reading. EXCEDIDO cuts the fill and border to red and closes with a red chip.",
+      "html": "<ul class=\"ds-presu\"><li class=\"ds-presu-item\"><span class=\"ds-presu-nombre\">TRANSPORTE</span><div class=\"ds-presu-barra\" style=\"--pct: 75%\"></div><span class=\"ds-presu-lectura\">44.800 ARS / 60.000 ARS <b>75%</b></span></li><li class=\"ds-presu-item ds-presu-excedido\"><span class=\"ds-presu-nombre\">ALIMENTACIÓN</span><div class=\"ds-presu-barra\" style=\"--pct: 116%\"></div><span class=\"ds-presu-lectura\">138.600 ARS / 120.000 ARS <b>116%</b><span class=\"ds-etiqueta-excedido\">EXCEDIDO</span></span></li></ul>",
+      "css": ".ds-presu { list-style: none; display: grid; gap: 14px; margin: 0; padding: 0; font-family: var(--mono, 'JetBrains Mono', ui-monospace, monospace); color: var(--tinta); } .ds-presu-item { display: grid; grid-template-columns: 24ch minmax(0, 1fr) auto; gap: 20px; align-items: center; padding: 12px 16px; border: 3px solid var(--tinta); background: var(--papel-claro); } .ds-presu-nombre { font-size: 0.8rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; } .ds-presu-barra { height: 20px; background: var(--concreto); border: 2px solid var(--tinta); position: relative; } .ds-presu-barra::after { content: ''; position: absolute; inset: 0 auto 0 0; width: min(var(--pct), 100%); background: var(--ocre-barra); } .ds-presu-excedido .ds-presu-barra::after { background: var(--rojo); } .ds-presu-excedido .ds-presu-barra { border-color: var(--rojo); } .ds-presu-lectura { font-size: 0.78rem; white-space: nowrap; } .ds-presu-lectura b { font-weight: 700; font-variant-numeric: tabular-nums; } .ds-etiqueta-excedido { background: var(--rojo); color: var(--papel); font-size: 0.66rem; font-weight: 700; letter-spacing: 0.1em; padding: 1px 6px; margin-left: 8px; }"
+    },
+    {
+      "name": "El Sello — Stamped Row",
+      "kind": "custom",
+      "refersTo": "total-block",
+      "description": "The signature confirmation: new ledger row cuts red→paper (sello-cae 180ms), DEMO chip declares provisional data, ANOTADO stamp pops once at −6° (estampa-pop 90ms). steps(2,end) only; nothing at rest.",
+      "html": "<div class=\"ds-celda\"><span class=\"ds-sello-demo\">DEMO</span>Alquiler mes de octubre<span class=\"ds-estampa\">ANOTADO</span></div>",
+      "css": ".ds-celda { position: relative; display: inline-block; background: var(--papel-claro); border: 2px solid var(--tinta); padding: 10px 14px; font-family: var(--mono, 'JetBrains Mono', ui-monospace, monospace); font-size: 0.88rem; color: var(--tinta); } .ds-sello-demo { font-size: 0.66rem; letter-spacing: 0.1em; background: var(--rojo); color: var(--papel); padding: 1px 6px; margin-right: 8px; } .ds-estampa { position: absolute; right: 8px; top: 50%; font-size: 0.66rem; font-weight: 700; letter-spacing: 0.12em; border: 2px solid var(--rojo); color: var(--rojo); background: var(--papel-claro); padding: 0 6px; transform: translateY(-50%) rotate(-6deg); animation: ds-estampa-pop 90ms steps(2, end) 1; pointer-events: none; } @keyframes ds-estampa-pop { from { transform: translateY(-50%) rotate(-6deg) scale(1.9); opacity: 0.4; } to { transform: translateY(-50%) rotate(-6deg) scale(1); opacity: 1; } } @keyframes ds-sello-cae { from { background: var(--rojo); color: var(--papel); } to { background: transparent; color: var(--tinta); } } .ds-fila-nueva { animation: ds-sello-cae 180ms steps(2, end) 1; } @media (prefers-reduced-motion: reduce) { .ds-estampa, .ds-fila-nueva { animation: none; } }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Ledger Press",
+    "overview": "RFinance is a money desk set as a constructivist poster press. The page ground is aged bone paper (papel) with real grayscale grain multiplied over the token color; on it sit flat ink-black blocks, red clipped bands, and ruled data — no cards-with-rounded-corners, no accent-on-cream fintech default. The world is owner-pinned Soviet constructivism plus utilitarian brutalism, held sober: it behaves like a registration instrument, never a novelty. The product's multi-currency reality (ARS and USD side by side, \"SIN CONVERSIÓN\") is composed into the layout itself — two ink totals blocks, one per currency, are the first thing on the desk.\n\nThree voices share the stage and never trade jobs: Saira Stencil One stamps the wordmark and section titles, Anton sets numerals and button type in capitals, and JetBrains Mono carries every piece of actual data in tabular figures. One diagonal-cut system governs every angle in the build: a 26px clip on section bands, −30° corner wedges on the auth box and totals blocks, and a lone −6° tilt reserved for the rubber-stamp state. Depth is press-depth — hard 2px/3px ink frames, flat fills, and offset drop shadows only under lifted primary controls. Motion is two-frame hard cuts at 90–180ms with steps(2, end); the signature moment, El Sello, stamps a newly recorded row (\"ANOTADO\") in one snap.\n\nStatus of this record (scan mode, captured 2026-10-14 from the shipped /, /login, /register surfaces): tokens and components below are evidenced in static/css/style.css (shared world) and static/css/dashboard.css (home composition). Open areas the build does not yet resolve: i18n — copy is Spanish-only, no EN mechanism exists yet (strings sit centralized in templates); admin surface — /admin is a placeholder that inherits the world via style.css (.panel-admin) with no composed content of its own; backend schemas — every ledger row, account, budget, and chart is synthetic in-memory demo data explicitly labeled \"DE EJEMPLO\", and no currency conversion is performed or faked. Whether income keeps ocre or moves to green is an open owner call (a single-token swap if it changes).",
+    "keyCharacteristics": [
+      "Five materials doing semantic jobs; one diagonal-cut family; zero radius.",
+      "Anton giant numerals, stencil titles inside red clipped bands, mono for all data.",
+      "Ink blocks for structure, paper for field, concrete-grey for secondary panels.",
+      "Hard offset shadows only on lifted controls; everything else flat and framed by 2–3px ink borders.",
+      "Step-motion only (steps(2, end), 90–180ms); states cut, never ease.",
+      "Browser surfaces (selection, caret, focus ring, scrollbar) are themed in ink/red.",
+      "Dense ruled blocks float in wide paper margins; nothing is printed around them."
+    ],
+    "rules": [
+      { "name": "The Semantic Labor Rule", "body": "Every palette member has a job: rojo = egreso/déficit/acción primaria, ocre = ingreso/positivo, tinta/papel = estructura/ground, concreto = secundario. Never decorate with a color whose job the context contradicts — red never marks a success, ochre never marks an expense.", "section": "colors" },
+      { "name": "The Texture-by-Blend Rule", "body": "Material character comes from grayscale raster grain (.textures/papel-hueso.png, .textures/concreto.png, procedural with embedded provenance) multiplied over a token color — background-blend-mode: multiply — never from pre-tinted images or gradients. The color is always a :root token; the grain is always achromatic.", "section": "colors" },
+      { "name": "The Mono-Means-Data Rule", "body": "Anything that varies row to row — ledger cells, form values, dates, counts, chart labels — is JetBrains Mono with tabular figures. Anton numerals exist only as printed posters (headline totals, balances, chart heads), never inside tables.", "section": "typography" },
+      { "name": "The No-Kicker Rule (as practiced)", "body": "The red clipped band *is* the section title — no eyebrow line is ever printed above a heading. Small-caps mono text exists only when it does work: naming a field, carrying a date/currency/count, or declaring state (DEMO, EXCEDIDO, ANOTADO, DATOS DE EJEMPLO).", "section": "typography" },
+      { "name": "The Full-Cell Recompress Rule", "body": "When the grid narrows, cells re-compose as complete units — rows become stacked labeled blocks; a column is never left orphaned, and table.libro drops to min-width: 0 instead of scrolling.", "section": "layout" },
+      { "name": "The Pressed-Shadow Rule", "body": "Offsets are hard, 0-blur, and ink-colored; they appear only under primary actions and standalone sheets. A control's :active state cancels its shadow and shifts 2px down-right — depth is mechanical press, never atmosphere.", "section": "elevation" },
+      { "name": "The Single Cut Rule", "body": "If an edge is slanted it came from one of exactly three sources: the 26px band clip, a −30° wedge, or the −6° stamp tilt. New angles are not added; the cut system also governs chart bar width (26px rects) and the seal — one angle across bands, bars, and sellos.", "section": "shapes" },
+      { "name": "The Zero-Radius Rule", "body": "No corner is softened at any scale — not buttons, not inputs, not panels. Roundness is a defect in this world.", "section": "shapes" },
+      { "name": "The Destructive Isolation Rule", "body": "Log out and delete controls are physically separated, rendered outline-at-rest, and only resolve on deliberate hover/focus. They never carry the primary action's red fill or lift shadow at rest.", "section": "components" },
+      { "name": "The Step-Cut Rule (no easing)", "body": "Every state change is either instant (transition: none on controls) or a two-frame steps(2, end) cut at 90–180ms. Nothing fades, slides, or eases; under prefers-reduced-motion all animation is removed and stamp marks are not generated at all.", "section": "components" }
+    ],
+    "dos": [
+      "Do source every color from the five :root materials; if a needed value isn't in :root, the design isn't done yet — extend the token, then use it.",
+      "Do keep the Semantic Labor assignment fixed: red for egreso/déficit/primary, ochre for ingreso/success, concrete for secondary, ink/papel for structure.",
+      "Do set all data in mono with tabular figures; reserve Anton numerals for poster-scale numbers only.",
+      "Do use the band as the only section-title treatment, clipped by --corte (26px) and capped at 42ch.",
+      "Do press with hard offsets: 4px 4px 0 under primary controls, 8px 8px 0 under standalone sheets, cancel-to-translate(2px,2px) on active.",
+      "Do cut states with steps(2, end) at 90–180ms or not at all, and honor prefers-reduced-motion.",
+      "Do isolate destructive actions in outline-at-rest form (.btn-peligro / .btn-salir pattern).",
+      "Do texture via multiply-blended grayscale rasters over a token color (bone paper on body, concrete on USD panels).",
+      "Do label provisional data honestly — \"DE EJEMPLO\" / DEMO chips stay until the backend is real.",
+      "Do recompact grids into full cells at 1024/640px; keep fecha, concepto, and monto visible in the mobile ledger row."
+    ],
+    "donts": [
+      "Don't round any corner, blur any shadow, ease any motion, or float any glass — the world has none of these.",
+      "Don't invent diagonal angles: only the 26px band clip, the −30° wedge, and the −6° stamp tilt exist.",
+      "Don't paint success red or expense ochre; don't hand the primary-action red to anything decorative.",
+      "Don't add eyebrow/kicker lines above headings or decorative small-caps that carry no field, count, or state.",
+      "Don't use glyph-icon libraries — arrows and carets are CSS triangles; charts are inline SVG.",
+      "Don't fade between states; two-frame hard cuts or instant swaps only.",
+      "Don't fabricate financial data, conversion rates, or currency symbols — amounts arrive with their currency as a first-class label (a chip), and no cross-currency math is implied.",
+      "Don't ship unthemed browser surfaces on new pages — selection, caret, focus ring, and scrollbar inherit style.css globally; keep it that way."
+    ]
+  }
+}

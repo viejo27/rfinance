@@ -60,6 +60,8 @@ async fn main() -> std::io::Result<()> {
             .service(api_logout)
             .service(actix_files::Files::new("/css", "static/css").show_files_listing())
             .service(actix_files::Files::new("/js", "static/js").show_files_listing())
+            .service(actix_files::Files::new("/fonts", "static/fonts"))
+            .service(actix_files::Files::new("/textures", "static/textures"))
     })
     .bind(("127.0.0.1", 8080))?
     .run()

@@ -16,6 +16,8 @@ pub async fn check_session(
         || path.starts_with("/api/")
         || path.starts_with("/css")
         || path.starts_with("/js")
+        || path.starts_with("/fonts")
+        || path.starts_with("/textures")
     {
         return next
             .call(req)

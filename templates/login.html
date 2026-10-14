@@ -1,30 +1,32 @@
 <!DOCTYPE html>
 <html lang="es">
 	<head>
-		<title>Login - RFinance</title>
+		<title>Ingreso — RFinance</title>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<link href="/css/style.css" rel="stylesheet">
 	</head>
 	<body>
-		<div class="login-container">
-			<div class="login-box">
-				<h1>RFinance</h1>
-				<p class="subtitle">Iniciar sesión</p>
+		<main class="auth-centro">
+			<div class="auth-caja">
+				<h1 class="auth-marca">RFINANCE</h1>
+				<p class="auth-sub rotulo">INICIO DE SESIÓN</p>
+				<p class="aviso aviso-error" id="loginError" role="alert" hidden></p>
 				<form id="loginForm">
-					<div class="form-group">
-						<label for="email">Email</label>
-						<input type="email" id="email" name="email" required>
-					</div>
-					<div class="form-group">
-						<label for="password">Contraseña</label>
-						<input type="password" id="password" name="password" required>
-					</div>
-				<button type="submit">Ingresar</button>
-			</form>
-			<p>¿No tienes cuenta? <a href="/register">Regístrate</a></p>
-		</div>
-		</div>
+					<label class="campo-label rotulo" for="email">EMAIL</label>
+					<input class="campo" type="email" id="email" name="email" autocomplete="email" required>
+
+					<label class="campo-label rotulo" for="password">CONTRASEÑA</label>
+					<input class="campo" type="password" id="password" name="password" autocomplete="current-password" required>
+
+					<button class="btn btn-primario" type="submit" style="margin-top:26px">INGRESAR</button>
+				</form>
+				<p class="auth-enlace">¿No tienes cuenta? <a href="/register">REGÍSTRATE</a></p>
+				<footer class="auth-pie rotulo">
+					<span>MONEDAS: <b style="color:var(--rojo)">ARS · USD</b> · TUS DATOS, TU LIBRO</span>
+				</footer>
+			</div>
+		</main>
 		<script src="/js/login.js"></script>
 	</body>
 </html>
