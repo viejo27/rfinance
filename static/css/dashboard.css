@@ -232,7 +232,7 @@
 .histo {
 	display: block;
 	width: 100%;
-	height: 118px;
+	height: auto;
 	margin-top: 10px;
 }
 
@@ -734,7 +734,8 @@ table.libro td:has(.monto) {
 .grafico {
 	display: block;
 	width: 100%;
-	height: 240px;
+	height: auto;
+	margin-top: 10px;
 }
 
 .grafico text {
@@ -796,6 +797,82 @@ table.libro td:has(.monto) {
 }
 
 /* ---------- Componentes v2: acciones, altas, recurrencia, vacíos ---------- */
+
+/* navegador de mes: una sola tira enfoca libro y presupuestos */
+.mes-nav {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	margin-bottom: 16px;
+}
+
+.mes-flecha {
+	width: 36px;
+	height: 36px;
+	padding: 0;
+	border: 2px solid var(--tinta);
+	background: var(--papel-claro);
+	position: relative;
+	cursor: pointer;
+	flex-shrink: 0;
+}
+
+.mes-flecha::after {
+	content: '';
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	border: 8px solid transparent;
+}
+
+.mes-flecha.prev::after {
+	border-right: 12px solid var(--tinta);
+	transform: translate(-55%, -50%);
+}
+
+.mes-flecha.next::after {
+	border-left: 12px solid var(--tinta);
+	transform: translate(-45%, -50%);
+}
+
+.mes-flecha:hover,
+.mes-flecha:focus-visible {
+	background: var(--tinta);
+}
+
+.mes-flecha:hover.prev::after,
+.mes-flecha:focus-visible.prev::after {
+	border-right-color: var(--papel);
+}
+
+.mes-flecha:hover.next::after,
+.mes-flecha:focus-visible.next::after {
+	border-left-color: var(--papel);
+}
+
+#mesVisto {
+	min-width: 15ch;
+}
+
+/* chip del mes visto, dentro de la banda de presupuestos */
+.etiqueta-mes {
+	display: inline-block;
+	background: var(--tinta);
+	color: var(--papel);
+	padding: 2px 8px;
+	letter-spacing: 0.1em;
+	margin-left: 14px;
+	vertical-align: 2px;
+}
+
+/* los anclajes caen sobre la banda, no bajo la barra sticky */
+#sec-mando,
+#sec-cuentas,
+#sec-libro,
+#sec-presu,
+#sec-carteles {
+	scroll-margin-top: 84px;
+}
 
 .btn-mini {
 	font-family: var(--display);
@@ -1058,6 +1135,8 @@ table.libro td:has(.monto) {
 		grid-column: 1 / -1;
 		order: 3;
 		padding-bottom: 4px;
+		-webkit-mask-image: linear-gradient(90deg, #000 88%, transparent);
+		mask-image: linear-gradient(90deg, #000 88%, transparent);
 	}
 
 	.mando {

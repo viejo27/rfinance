@@ -1,6 +1,7 @@
-// RFinance — home: estado en memoria + render client-side.
-// Nada se persiste: todo vive en esta pestaña y se borra al recargar.
-// Los datos semilla son de ejemplo, editables y borrables con el CRUD.
+// RFinance — home: cliente del API con render client-side.
+// El estado financiero vive en la base de datos (scope del user_id de
+// sesión); el GET / materializa las recurrencias y este módulo pinta
+// todo del GET /api/estado. Las mutaciones pasan por la API JSON.
 // El Sello (alta), el corte duro steps(2) y los materiales del mundo
 // quedan a cargo de style.css / dashboard.css.
 
@@ -13,11 +14,8 @@
 	var nfUSD = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 	var MESES = ['ENE', 'FEB', 'MAR', 'ABR', 'MAY', 'JUN', 'JUL', 'AGO', 'SEP', 'OCT', 'NOV', 'DIC'];
+	var MESES_LARGOS = ['ENERO', 'FEBRERO', 'MARZO', 'ABRIL', 'MAYO', 'JUNIO', 'JULIO', 'AGOSTO', 'SEPTIEMBRE', 'OCTUBRE', 'NOVIEMBRE', 'DICIEMBRE'];
 	var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-	var HOY_ISO = document.body.dataset.hoy || new Date().toISOString().slice(0, 10);
-	var ANO = Number(HOY_ISO.slice(0, 4));
-	var MES_HOY = Number(HOY_ISO.slice(5, 7));
-	var DIA_HOY = Number(HOY_ISO.slice(8, 10));
 
 	function fmt(valor, moneda) {
 		return (moneda === 'USD' ? nfUSD : nfARS).format(valor);
@@ -31,8 +29,8 @@
 		return iso.slice(8, 10) + ' ' + MESES[Number(iso.slice(5, 7)) - 1];
 	}
 
-	function ultimoDia(mes) {
-		return new Date(ANO, mes, 0).getDate();
+	function mesIso(anio, mes) {
+		return anio + '-' + String(mes).padStart(2, '0');
 	}
 
 	function el(tag, clase, texto) {
@@ -52,121 +50,62 @@
 		return document.getElementById(id);
 	}
 
-	// ---------- estado semilla (datos de ejemplo, editables y borrables) ----------
+	// ---------- API ----------
 
-	var estado = {
-		seq: 100,
-		cuentas: [
-			{ id: 1, nombre: 'Efectivo', moneda: 'ARS', saldoInicial: 84520 },
-			{ id: 2, nombre: 'Banco Nación', moneda: 'ARS', saldoInicial: 1632470 },
-			{ id: 3, nombre: 'Visa ARS', moneda: 'ARS', saldoInicial: -78215 },
-			{ id: 4, nombre: 'Reserva USD', moneda: 'USD', saldoInicial: 4650 },
-		],
-		categorias: [
-			{ id: 10, nombre: 'Alquiler', limite: 320000, moneda: 'ARS' },
-			{ id: 11, nombre: 'Alimentación', limite: 120000, moneda: 'ARS' },
-			{ id: 12, nombre: 'Transporte', limite: 60000, moneda: 'ARS' },
-			{ id: 13, nombre: 'Servicios', limite: 90000, moneda: 'ARS' },
-			{ id: 14, nombre: 'Suscripciones', limite: 30, moneda: 'USD' },
-			{ id: 15, nombre: 'Salud', limite: null, moneda: 'ARS' },
-			{ id: 16, nombre: 'Ocio', limite: null, moneda: 'ARS' },
-			{ id: 17, nombre: 'Ingresos', limite: null, moneda: 'ARS' },
-		],
-		movimientos: [
-			mv(1, '2026-10-12', 'Alquiler', 'Banco Nación', 'Alquiler mes de octubre', -320000, 'ARS', 1),
-			mv(2, '2026-10-12', 'Alimentación', 'Visa ARS', 'Supermercado La Anónima', -46800, 'ARS', null),
-			mv(3, '2026-10-11', 'Transporte', 'Efectivo', 'Nafta Shell, tanque lleno', -22400, 'ARS', null),
-			mv(4, '2026-10-11', 'Transporte', 'Efectivo', 'Tarifa de subte (20 viajes)', -3150, 'ARS', null),
-			mv(5, '2026-10-10', 'Suscripciones', 'Reserva USD', 'Netflix, plan familiar', -14.99, 'USD', null),
-			mv(6, '2026-10-10', 'Salud', 'Banco Nación', 'Prepaga Swiss Medical', -38900, 'ARS', null),
-			mv(7, '2026-10-09', 'Alimentación', 'Efectivo', 'Verdulería Doña Rosa', -8750, 'ARS', null),
-			mv(8, '2026-10-08', 'Ingresos', 'Banco Nación', 'Sueldo de octubre', 950000, 'ARS', null),
-			mv(9, '2026-10-07', 'Ingresos', 'Reserva USD', 'Honorario freelance (Denver)', 400, 'USD', null),
-			mv(10, '2026-10-06', 'Servicios', 'Banco Nación', 'Luz + ABL + gas', -27500, 'ARS', null),
-			mv(11, '2026-10-05', 'Ocio', 'Visa ARS', 'Cine y panchos, domingo', -19300, 'ARS', null),
-			mv(12, '2026-10-04', 'Suscripciones', 'Visa ARS', 'Spotify familiar', -2850, 'ARS', null),
-			mv(13, '2026-10-03', 'Ingresos', 'Efectivo', 'Reparación de PC, contado', 45000, 'ARS', null),
-			mv(14, '2026-10-02', 'Alimentación', 'Efectivo', 'Almuerzo en el trabajo', -6900, 'ARS', null),
-			mv(15, '2026-10-12', 'Ocio', 'Visa ARS', 'Notebook en 12 cuotas', -55000, 'ARS', 2),
-		],
-		recurrencias: {
-			1: { cuotas: null, concepto: 'Alquiler' },
-			2: { cuotas: 12, concepto: 'Notebook' },
-		},
-	};
-
-	function mv(id, fecha, categoria, cuenta, concepto, valor, moneda, recId) {
-		return { id: id, fecha: fecha, categoria: categoria, cuenta: cuenta, concepto: concepto, valor: valor, moneda: moneda, recId: recId };
-	}
-
-	// materializa los meses futuros del año calendario para cada recurrencia
-	function materializarRecurrencias() {
-		var extra = [];
-		Object.keys(estado.recurrencias).forEach(function (rid) {
-			extra = extra.concat(generarFuturos(Number(rid), 2, estado.recurrencias[rid].cuotas, null));
-		});
-		estado.movimientos = estado.movimientos.concat(extra);
-	}
-
-	function generarFuturos(recId, cuotaDesde, cuotas, origenExplicito) {
-		var origen = origenExplicito || primeraFilaRec(recId);
-		if (!origen) return [];
-		var futuros = [];
-		var cuota = cuotaDesde;
-		var base = origen.concepto.replace(/ en \d+ cuotas?$/i, '').replace(/,? mes de \w+$/i, '');
-		var dia = Math.min(Number(origen.fecha.slice(8, 10)), 28);
-		for (var mes = MES_HOY + 1; mes <= 12; mes++) {
-			if (cuotas !== null && cuota > cuotas) break;
-			dia = Math.min(dia, ultimoDia(mes));
-			var iso = ANO + '-' + String(mes).padStart(2, '0') + '-' + String(dia).padStart(2, '0');
-			var texto = cuotas !== null
-				? 'Cuota ' + cuota + '/' + cuotas + ', ' + base
-				: base + ', mes ' + MESES[mes - 1].toLowerCase();
-			futuros.push(mv(estado.seq++, iso, origen.categoria, origen.cuenta, texto, origen.valor, origen.moneda, recId));
-			cuota++;
+	async function pedir(url, opciones) {
+		var r = await fetch(url, opciones);
+		if (r.status === 401) {
+			window.location.href = '/login';
+			throw new Error('sesión expirada');
 		}
-		return futuros;
+		return r;
 	}
 
-	function primeraFilaRec(recId) {
-		for (var i = 0; i < estado.movimientos.length; i++) {
-			if (estado.movimientos[i].recId === recId) return estado.movimientos[i];
-		}
-		return null;
+	async function cargarEstado() {
+		var r = await pedir('/api/estado');
+		if (!r.ok) throw new Error('el servidor no contesta el estado');
+		estado = await r.json();
+		if (!vistaMes) vistaMes = mesIso(estado.anio, estado.mes);
 	}
 
-	materializarRecurrencias();
+	// ---------- estado ----------
 
-	// ---------- derivaciones ----------
-
-	// anulados: ids en ventana DESHACER — quedan pintados tachados,
-	// excluidos de saldos, totales y presupuestos hasta caer.
-	var anulados = {};
+	var estado = null; // del GET /api/estado
+	var vistaMes = null; // 'YYYY-MM' del mes visto en libro y presupuestos
+	var anulados = {}; // ids en ventana DESHACER (borrado diferido)
 	var timersUndo = {};
+	var orden = { clave: 'fecha', dir: -1 };
+	var editarMvId = null;
+	var editarCuentaId = null;
+	var editarCatId = null;
 
 	function activo(m) {
 		return !anulados[m.id];
 	}
 
-	function saldoDeCuenta(c) {
-		var s = c.saldoInicial;
-		for (var i = 0; i < estado.movimientos.length; i++) {
-			var m = estado.movimientos[i];
-			if (activo(m) && m.cuenta === c.nombre && m.moneda === c.moneda) s += m.valor;
-		}
-		return s;
+	function esMesVisto(iso) {
+		return iso.slice(0, 7) === vistaMes;
 	}
 
-	function usadoDeCategoria(cat) {
-		var usado = 0;
+	function esFuturo(iso) {
+		return estado && iso > estado.hoy;
+	}
+
+	// serie anual ENE→DIC del año en curso, derivada de los asientos reales
+	function serieDelAno(moneda) {
+		var serie = [null, null, null, null, null, null, null, null, null, null, null, null];
+		if (!estado) return serie;
 		for (var i = 0; i < estado.movimientos.length; i++) {
 			var m = estado.movimientos[i];
-			var mes = Number(m.fecha.slice(5, 7));
-			if (activo(m) && m.categoria === cat.nombre && m.moneda === cat.moneda && m.valor < 0 && mes === MES_HOY) {
-				usado += -m.valor;
-			}
+			if (!activo(m) || m.moneda !== moneda) continue;
+			if (Number(m.fecha.slice(0, 4)) !== estado.anio) continue;
+			var mes = Number(m.fecha.slice(5, 7)) - 1;
+			var par = serie[mes] || [0, 0];
+			if (m.valor > 0) par[0] += m.valor;
+			else par[1] += -m.valor;
+			serie[mes] = par;
 		}
-		return usado;
+		return serie;
 	}
 
 	function mostrarEstado(texto, clase) {
@@ -184,7 +123,7 @@
 		var nombresPorMoneda = { ARS: [], USD: [] };
 		for (var i = 0; i < estado.cuentas.length; i++) {
 			var c = estado.cuentas[i];
-			porMoneda[c.moneda] += saldoDeCuenta(c);
+			porMoneda[c.moneda] += c.saldo;
 			nombresPorMoneda[c.moneda].push(c.nombre);
 		}
 		$('totalArs').textContent = fmt(porMoneda.ARS, 'ARS');
@@ -194,82 +133,68 @@
 		$('subArs').textContent = nombresPorMoneda.ARS.join(' · ') || 'sin cuentas ARS';
 		$('subUsd').textContent = nombresPorMoneda.USD.join(' · ') || 'sin cuentas USD';
 
-		var serie = SERIES_DEMO.ARS;
-		var maximo = 0;
+		$('histoAno').textContent = 'AÑO ' + estado.anio;
+		var serie = serieDelAno('ARS');
 		var netoAnual = 0;
 		for (var m = 0; m < 12; m++) {
-			if (serie[m]) {
-				maximo = Math.max(maximo, serie[m][0], serie[m][1]);
-				netoAnual += serie[m][0] - serie[m][1];
-			}
+			if (serie[m]) netoAnual += serie[m][0] - serie[m][1];
 		}
+		$('netoAnual').textContent = netoAnual ? montoTxt(netoAnual, 'ARS') + ' NETO' : 'SIN DATOS';
 		var caja = $('mandoHisto');
 		caja.innerHTML = '';
-		caja.appendChild(graficoAño(serie, 'ARS', 'histo', 'Ingresos y egresos mensuales en pesos, año ' + ANO));
-		$('netoAnual').textContent = '+ ' + fmt(netoAnual, 'ARS') + ' (serie de ejemplo)';
+		caja.appendChild(graficoAnual(serie, 'histo', 'Ingresos y egresos mensuales en pesos, año ' + estado.anio, caja.clientWidth));
 	}
 
-	function graficoAño(serie, moneda, claseCss, etiquetaAria) {
+	function graficoAnual(serie, claseCss, etiquetaAria, W) {
+		W = Math.max(320, Math.round(W || 660));
+		var H = 240;
 		var maximo = 0;
 		for (var m = 0; m < 12; m++) {
 			if (serie[m]) maximo = Math.max(maximo, serie[m][0], serie[m][1]);
 		}
-		var g = svg('svg', { class: claseCss, viewBox: '0 0 660 240', role: 'img', 'aria-label': etiquetaAria });
+		var g = svg('svg', { class: claseCss, viewBox: '0 0 ' + W + ' ' + H, role: 'img', 'aria-label': etiquetaAria });
+		var pitch = W / 12;
+		var base = H - 32;
 		for (var m2 = 0; m2 < 12; m2++) {
-			var x = 8 + m2 * 54;
+			var x = m2 * pitch + pitch * 0.18;
 			var par = serie[m2];
 			if (par) {
-				barra(g, x, par[0], maximo, 'var(--ocre-barra)', MESES[m2] + ' ingresos');
-				barra(g, x + 18, par[1], maximo, 'var(--rojo)', MESES[m2] + ' egresos');
+				barra(g, x, par[0], maximo, 'var(--ocre-barra)', MESES[m2] + ' ingresos: ' + fmt(par[0], 'ARS'), base);
+				barra(g, x + pitch * 0.36, par[1], maximo, 'var(--rojo)', MESES[m2] + ' egresos: ' + fmt(par[1], 'ARS'), base);
 			} else {
-				g.appendChild(svg('rect', { x: x + 2, y: 196, width: 12, height: 2, fill: 'var(--concreto)' }));
-				g.appendChild(svg('rect', { x: x + 20, y: 196, width: 12, height: 2, fill: 'var(--concreto)' }));
+				g.appendChild(svg('rect', { x: x, y: base - 2, width: Math.max(8, pitch * 0.18), height: 2, fill: 'var(--concreto)' }));
+				g.appendChild(svg('rect', { x: x + pitch * 0.36, y: base - 2, width: Math.max(8, pitch * 0.18), height: 2, fill: 'var(--concreto)' }));
 			}
-			g.appendChild(svg('text', { x: x + 16, y: 226, 'text-anchor': 'middle' })).textContent = MESES[m2];
+			var t = svg('text', { x: m2 * pitch + pitch / 2, y: H - 12, 'text-anchor': 'middle' });
+			t.textContent = MESES[m2];
+			g.appendChild(t);
 		}
-		g.appendChild(svg('line', { class: 'eje', x1: 4, y1: 208, x2: 656, y2: 208 }));
+		g.appendChild(svg('line', { class: 'eje', x1: 4, y1: base, x2: W - 4, y2: base }));
 		return g;
 	}
 
-	function barra(grafico, x, valor, maximo, color, titulo) {
-		var h = Math.max(2, Math.round((valor / maximo) * 190));
-		var rect = svg('rect', { x: x, y: 208 - h, width: 14, height: h, fill: color });
+	function barra(grafico, x, valor, maximo, color, titulo, base) {
+		var h = Math.max(3, Math.round((valor / maximo) * (base - 16)));
+		var rect = svg('rect', { x: x, y: base - h, width: 12, height: h, fill: color });
 		var t = svg('title');
-		t.textContent = titulo + ': ' + valor;
+		t.textContent = titulo;
 		rect.appendChild(t);
 		grafico.appendChild(rect);
 	}
 
-	// series de ejemplo del año calendario ENE→DIC ([ingreso, egreso] por mes)
-	var SERIES_DEMO = {
-		ARS: [
-			[610000, 520000], [640000, 551000], [720000, 598000], [745000, 610000],
-			[780000, 640000], [952000, 701500], [868000, 559200], [1340000, 812300],
-			[986000, 664800], [1390000, 978600], null, null,
-		],
-		USD: [
-			[380, 290], [420, 305], [510, 364], [560, 390],
-			[600, 420], [850, 510], [400, 380], [1240, 690],
-			[780, 455], [1150, 742], null, null,
-		],
-	};
-
 	// ---------- cuentas ----------
-
-	var editarCuentaId = null;
 
 	function renderCuentas() {
 		var grilla = $('cuentasGrilla');
 		grilla.innerHTML = '';
 		for (var i = 0; i < estado.cuentas.length; i++) {
 			var c = estado.cuentas[i];
-			var saldo = saldoDeCuenta(c);
 			var bloque = el('div', 'cuenta' + (c.moneda === 'USD' ? ' cuenta-malla' : ''));
 			bloque.appendChild(el('span', 'rotulo', c.nombre));
-			bloque.appendChild(el('span', 'cuenta-saldo' + (saldo < 0 ? ' cuenta-neg' : ''), fmt(saldo, c.moneda)));
+			bloque.appendChild(el('span', 'cuenta-saldo' + (c.saldo < 0 ? ' cuenta-neg' : ''), fmt(c.saldo, c.moneda)));
 			bloque.appendChild(el('span', 'cuenta-chip', c.moneda));
 			var acciones = el('div', 'cuenta-acciones');
-			acciones.appendChild(boton('EDITAR', function (cta) { return function () { entrarEdicionCuenta(cta.id); }; }, c));
+			acciones.appendChild(boton('EDITAR', function (cta) { return function () { entrarEdicionCuenta(cta); }; }, c));
 			acciones.appendChild(boton('BORRAR', function (cta) { return function () { borrarCuenta(cta); }; }, c, 'btn-mini-peligro'));
 			bloque.appendChild(acciones);
 			grilla.appendChild(bloque);
@@ -285,28 +210,41 @@
 		return b;
 	}
 
-	function borrarCuenta(c) {
-		var n = 0;
-		for (var i = 0; i < estado.movimientos.length; i++) if (estado.movimientos[i].cuenta === c.nombre) n++;
-		var msg = '¿Borrar la cuenta «' + c.nombre + '»?';
-		if (n) msg += ' Sus ' + n + ' asiento(s) del libro también se borran.';
-		msg += ' (Demo: solo en esta pestaña.)';
-		if (!window.confirm(msg)) return;
-		estado.cuentas = estado.cuentas.filter(function (x) { return x.id !== c.id; });
-		estado.movimientos = estado.movimientos.filter(function (m) { return m.cuenta !== c.nombre; });
-		if (editarCuentaId === c.id) salirEdicionCuenta();
+	async function mutar(url, metodo, cuerpo, avisoExito) {
+		var opciones = { method: metodo };
+		if (cuerpo !== undefined) {
+			opciones.headers = { 'Content-Type': 'application/json' };
+			opciones.body = JSON.stringify(cuerpo);
+		}
+		var r = await pedir(url, opciones);
+		if (!r.ok) {
+			var texto = await r.text();
+			mostrarEstado(texto || 'No se pudo guardar', 'aviso-error');
+			throw new Error(texto);
+		}
+		await cargarEstado();
 		renderTodo();
-		mostrarEstado('Cuenta «' + c.nombre + '» borrada (demo, en memoria).', 'aviso-exito');
+		if (avisoExito) mostrarEstado(avisoExito, 'aviso-exito');
+		return r;
 	}
 
-	function entrarEdicionCuenta(id) {
-		var c = null;
-		for (var i = 0; i < estado.cuentas.length; i++) if (estado.cuentas[i].id === id) c = estado.cuentas[i];
-		if (!c) return;
-		editarCuentaId = id;
+	async function borrarCuenta(c) {
+		var n = 0;
+		for (var i = 0; i < estado.movimientos.length; i++) {
+			if (activo(estado.movimientos[i]) && estado.movimientos[i].cuenta === c.nombre) n++;
+		}
+		var msg = '¿Borrar la cuenta «' + c.nombre + '»?';
+		if (n) msg += ' Sus ' + n + ' asiento(s) del libro también se borran.';
+		if (!window.confirm(msg)) return;
+		try {
+			await mutar('/api/cuentas/' + c.id, 'DELETE', undefined, 'Cuenta «' + c.nombre + '» borrada.');
+		} catch (e) { /* el aviso ya quedó en pantalla */ }
+	}
+
+	function entrarEdicionCuenta(c) {
+		editarCuentaId = c.id;
 		$('altaTitulo').textContent = 'EDITAR CUENTA';
 		$('altaNombre').value = c.nombre;
-		$('altaNombre').dataset.previo = c.nombre;
 		$('altaMoneda').value = c.moneda;
 		$('altaSaldo').value = c.saldoInicial;
 		$('altaCuentaBtn').textContent = 'GUARDAR';
@@ -316,46 +254,65 @@
 
 	function salirEdicionCuenta() {
 		editarCuentaId = null;
-		delete $('altaNombre').dataset.previo;
 		$('altaTitulo').textContent = 'AGREGAR CUENTA';
 		$('altaCuentaForm').reset();
 		$('altaCuentaBtn').textContent = 'AGREGAR';
 		$('altaCuentaCancelar').hidden = true;
 	}
 
-	$('altaCuentaForm').addEventListener('submit', function (e) {
+	$('altaCuentaForm').addEventListener('submit', async function (e) {
 		e.preventDefault();
-		var nombre = $('altaNombre').value.trim();
-		var moneda = $('altaMoneda').value;
-		var saldo = parseFloat(($('altaSaldo').value || '0').replace(',', '.'));
-		if (!nombre) return;
-		if (editarCuentaId !== null) {
-			var previo = $('altaNombre').dataset.previo;
-			for (var i = 0; i < estado.cuentas.length; i++) if (estado.cuentas[i].id === editarCuentaId) {
-				estado.cuentas[i].nombre = nombre;
-				estado.cuentas[i].moneda = moneda;
-				estado.cuentas[i].saldoInicial = saldo;
+		var cuerpo = {
+			nombre: $('altaNombre').value.trim(),
+			moneda: $('altaMoneda').value,
+			saldo_inicial: parseFloat(($('altaSaldo').value || '0').replace(',', '.')),
+		};
+		try {
+			if (editarCuentaId !== null) {
+				await mutar('/api/cuentas/' + editarCuentaId, 'PATCH', cuerpo, 'Cuenta «' + cuerpo.nombre + '» guardada.');
+				salirEdicionCuenta();
+			} else {
+				await mutar('/api/cuentas', 'POST', cuerpo, 'Cuenta «' + cuerpo.nombre + '» agregada.');
+				salirEdicionCuenta();
 			}
-			for (var j = 0; j < estado.movimientos.length; j++) if (estado.movimientos[j].cuenta === previo) estado.movimientos[j].cuenta = nombre;
-			salirEdicionCuenta();
-			renderTodo();
-			mostrarEstado('Cuenta «' + nombre + '» guardada (demo, en memoria).', 'aviso-exito');
-		} else {
-			estado.cuentas.push({ id: estado.seq++, nombre: nombre, moneda: moneda, saldoInicial: saldo });
-			salirEdicionCuenta();
-			renderTodo();
-			mostrarEstado('Cuenta «' + nombre + '» agregada (demo, en memoria).', 'aviso-exito');
-		}
+		} catch (err) { /* aviso en pantalla */ }
 	});
 
-	$('altaCuentaCancelar').addEventListener('click', function () {
-		salirEdicionCuenta();
-		renderCuentas();
+	$('altaCuentaCancelar').addEventListener('click', salirEdicionCuenta);
+
+	// ---------- navegador de mes ----------
+
+	function renderMesNav() {
+		var partes = vistaMes.split('-');
+		var mes = Number(partes[1]);
+		var anio = Number(partes[0]);
+		$('mesVisto').textContent = MESES_LARGOS[mes - 1] + ' ' + anio;
+		var esHoy = vistaMes === mesIso(estado.anio, estado.mes);
+		$('mesHoy').hidden = esHoy;
+		$('presuMes').hidden = esHoy;
+		if (!esHoy) $('presuMes').textContent = 'MES VISTO: ' + MESES[mes - 1] + ' ' + anio;
+	}
+
+	$('mesPrev').addEventListener('click', function () { cambiarMes(-1); });
+	$('mesNext').addEventListener('click', function () { cambiarMes(1); });
+
+	function cambiarMes(delta) {
+		var partes = vistaMes.split('-');
+		var total = Number(partes[0]) * 12 + Number(partes[1]) - 1 + delta;
+		vistaMes = mesIso(Math.floor(total / 12), (total % 12 + 1));
+		renderMesNav();
+		renderLibro();
+		renderPresu();
+	}
+
+	$('mesHoy').addEventListener('click', function () {
+		vistaMes = mesIso(estado.anio, estado.mes);
+		renderMesNav();
+		renderLibro();
+		renderPresu();
 	});
 
-	// ---------- libro contable ----------
-
-	var orden = { clave: 'fecha', dir: -1 };
+	// ---------- libro contable (mes visto) ----------
 
 	function comparar(a, b) {
 		var cmp;
@@ -374,25 +331,34 @@
 		var moneda = $('fMoneda').value;
 		var categoria = $('fCategoria').value;
 		var concepto = $('fConcepto').value.trim().toLowerCase();
-		var filas = estado.movimientos.slice().sort(comparar);
-		var visibles = 0;
-		for (var i = 0; i < filas.length; i++) {
-			var m = filas[i];
+
+		var filas = [];
+		for (var i = 0; i < estado.movimientos.length; i++) {
+			var m = estado.movimientos[i];
+			if (!esMesVisto(m.fecha)) continue;
 			var ok = (!moneda || m.moneda === moneda) &&
 				(!categoria || m.categoria === categoria) &&
 				(!concepto || m.concepto.toLowerCase().includes(concepto));
-			if (!ok) continue;
-			visibles++;
-			cuerpo.appendChild(filaLibro(m, nuevosIds[m.id]));
+			if (ok) filas.push(m);
 		}
-		$('libroVacio').hidden = visibles !== 0;
-		$('libroConteo').textContent = visibles + (visibles === 1 ? ' ASIENTO' : ' ASIENTOS');
+		filas.sort(comparar);
+
+		for (var j = 0; j < filas.length; j++) {
+			cuerpo.appendChild(filaLibro(filas[j], nuevosIds[filas[j].id]));
+		}
+
+		var sinAsientos = estado.movimientos.length === 0;
+		$('libroVacioTexto').textContent = sinAsientos
+			? 'EL LIBRO ESTÁ VACÍO · ANOTA TU PRIMER ASIENTO ARRIBA'
+			: 'SIN ASIENTOS EN ESTE MES · NAVEGA OTRO MES O ANOTA ARRIBA';
+		$('libroVacio').hidden = filas.length !== 0;
+		$('libroConteo').textContent = filas.length + (filas.length === 1 ? ' ASIENTO' : ' ASIENTOS');
 	}
 
 	function filaLibro(m, nuevo) {
 		var anul = !!anulados[m.id];
 		var tr = el('tr', 'movimiento' + (anul ? ' fila-anulada' : '') + (nuevo ? ' fila-nueva' : ''));
-		var futuro = m.fecha > HOY_ISO;
+		var futuro = esFuturo(m.fecha);
 		if (futuro) tr.classList.add('fila-futura');
 
 		tr.appendChild(celda('celda-fecha', fechaCorta(m.fecha) + (futuro ? ' · PRÓX.' : '')));
@@ -400,9 +366,8 @@
 		tr.appendChild(celda('celda-cuenta', m.cuenta));
 
 		var tdC = el('td', 'celda-concepto');
-		if (m.recId) {
-			var chip = el('span', 'sello-demo-h chip-rec', 'RECURRENTE');
-			tdC.appendChild(chip);
+		if (m.rec_id) {
+			tdC.appendChild(el('span', 'sello-demo-h chip-rec', 'RECURRENTE'));
 		}
 		tdC.appendChild(document.createTextNode(m.concepto));
 		if (nuevo && !reduceMotion && !anul) {
@@ -418,13 +383,13 @@
 		if (anul) {
 			tdA.appendChild(boton('DESHACER', function () { return function () { deshacer(m.id); }; }, null, 'btn-deshacer'));
 		} else {
-			tdA.appendChild(boton('EDITAR', function (mov) { return function () { entrarEdicionAsiento(mov.id); }; }, m));
-			tdA.appendChild(boton('BORRAR', function (mov) { return function () { borrarAsiento(mov.id); }; }, m, 'btn-mini-peligro'));
-			if (m.recId) {
+			tdA.appendChild(boton('EDITAR', function (mov) { return function () { entrarEdicionAsiento(mov); }; }, m));
+			tdA.appendChild(boton('BORRAR', function (mov) { return function () { borrarAsiento(mov); }; }, m, 'btn-mini-peligro'));
+			if (m.rec_id) {
 				var bRec = el('button', 'btn btn-mini btn-mini-peligro', 'BORRAR REC.');
 				bRec.type = 'button';
-				bRec.title = 'Corta la recurrencia: borra los asientos futuros de este año';
-				bRec.addEventListener('click', (function (mov) { return function () { borrarRecurrencia(mov.recId); }; })(m));
+				bRec.title = 'Corta la recurrencia: borra los asientos futuros';
+				bRec.addEventListener('click', function () { borrarRecurrencia(m.rec_id); });
 				tdA.appendChild(bRec);
 			}
 		}
@@ -436,55 +401,59 @@
 		return el('td', clase, texto);
 	}
 
-	function borrarAsiento(id) {
-		var m = null;
-		for (var i = 0; i < estado.movimientos.length; i++) if (estado.movimientos[i].id === id) m = estado.movimientos[i];
-		if (!m) return;
+	function borrarAsiento(m) {
 		var detalle = '«' + m.concepto + '» (' + fechaCorta(m.fecha) + ' · ' + montoTxt(m.valor, m.moneda) + ')';
-		if (!window.confirm('¿Borrar el asiento ' + detalle + '? (Demo: solo en esta pestaña.)')) return;
+		if (!window.confirm('¿Borrar el asiento ' + detalle + '?')) return;
 		anulados[m.id] = true;
 		timersUndo[m.id] = setTimeout(function () { caer(m.id); }, 4000);
-		renderTodo();
+		renderLibro();
 	}
 
 	function deshacer(id) {
 		clearTimeout(timersUndo[id]);
 		delete timersUndo[id];
 		delete anulados[id];
-		renderTodo();
+		renderLibro();
 	}
 
-	function caer(id) {
+	async function caer(id) {
 		clearTimeout(timersUndo[id]);
 		delete timersUndo[id];
 		delete anulados[id];
-		estado.movimientos = estado.movimientos.filter(function (x) { return x.id !== id; });
-		renderTodo();
+		try {
+			await mutar('/api/movimientos/' + id, 'DELETE', undefined, 'Asiento borrado.');
+		} catch (e) { /* aviso en pantalla */ }
 	}
 
-	function borrarRecurrencia(recId) {
+	async function borrarRecurrencia(recId) {
 		var futuros = 0;
+		var nombre = 'recurrencia';
 		for (var i = 0; i < estado.movimientos.length; i++) {
 			var m = estado.movimientos[i];
-			if (m.recId === recId && m.fecha > HOY_ISO) futuros++;
+			if (m.rec_id === recId) {
+				if (esFuturo(m.fecha)) futuros++;
+				nombre = m.concepto;
+			}
 		}
-		var origen = primeraFilaRec(recId);
-		var nombre = origen ? origen.concepto : 'recurrencia';
-		if (!window.confirm('¿Borrar la recurrencia «' + nombre + '»? Se borran ' + futuros + ' asiento(s) futuro(s) de este año; los ya cargados se conservan. (Demo.)')) return;
-		estado.movimientos = estado.movimientos.filter(function (m2) {
-			return !(m2.recId === recId && m2.fecha > HOY_ISO);
-		});
-		for (var j = 0; j < estado.movimientos.length; j++) {
-			if (estado.movimientos[j].recId === recId) estado.movimientos[j].recId = null;
-		}
-		delete estado.recurrencias[recId];
-		renderTodo();
-		mostrarEstado('Recurrencia «' + nombre + '» cortada; los asientos ya cargados quedan.', 'aviso-exito');
+		if (!window.confirm('¿Borrar la recurrencia «' + nombre + '»? Se borran ' + futuros + ' asiento(s) futuro(s); los ya cargados se conservan.')) return;
+		try {
+			await mutar('/api/recurrencias/' + recId, 'DELETE', undefined, 'Recurrencia cortada; los asientos ya cargados quedan.');
+		} catch (e) { /* aviso en pantalla */ }
 	}
 
-	// ---------- presupuestos / categorías ----------
+	// ---------- presupuestos / categorías (mes visto) ----------
 
-	var editarCatId = null;
+	function usadoDeCategoria(cat) {
+		var usado = 0;
+		for (var i = 0; i < estado.movimientos.length; i++) {
+			var m = estado.movimientos[i];
+			if (!activo(m) || !esMesVisto(m.fecha)) continue;
+			if (m.categoria === cat.nombre && m.moneda === cat.moneda && m.valor < 0) {
+				usado += -m.valor;
+			}
+		}
+		return usado;
+	}
 
 	function renderPresu() {
 		var lista = $('presuLista');
@@ -519,37 +488,32 @@
 				li.appendChild(lectura);
 			}
 			var acciones = el('div', 'presu-acciones');
-			acciones.appendChild(boton('EDITAR', function (c2) { return function () { entrarEdicionCat(c2.id); }; }, cat));
+			acciones.appendChild(boton('EDITAR', function (c2) { return function () { entrarEdicionCat(c2); }; }, cat));
 			acciones.appendChild(boton('BORRAR', function (c3) { return function () { borrarCat(c3); }; }, cat, 'btn-mini-peligro'));
 			li.appendChild(acciones);
 			lista.appendChild(li);
 		}
 		$('estadoPresu').hidden = estado.categorias.length !== 0;
-		sincronizarSelects();
+		renderMesNav();
 	}
 
-	function borrarCat(cat) {
+	async function borrarCat(cat) {
 		var conAsientos = 0;
-		for (var i = 0; i < estado.movimientos.length; i++) if (estado.movimientos[i].categoria === cat.nombre) conAsientos++;
+		for (var i = 0; i < estado.movimientos.length; i++) {
+			if (estado.movimientos[i].categoria === cat.nombre) conAsientos++;
+		}
 		var msg = '¿Borrar la categoría «' + cat.nombre + '»?';
 		if (conAsientos) msg += ' Sus ' + conAsientos + ' asiento(s) conservan la categoría como texto.';
-		msg += ' (Demo.)';
 		if (!window.confirm(msg)) return;
-		estado.categorias = estado.categorias.filter(function (x) { return x.id !== cat.id; });
-		if (editarCatId === cat.id) salirEdicionCat();
-		renderTodo();
-		mostrarEstado('Categoría «' + cat.nombre + '» borrada.', 'aviso-exito');
+		try {
+			await mutar('/api/categorias/' + cat.id, 'DELETE', undefined, 'Categoría «' + cat.nombre + '» borrada.');
+		} catch (e) { /* aviso en pantalla */ }
 	}
 
-	function entrarEdicionCat(id) {
-		var cat = null;
-		for (var i = 0; i < estado.categorias.length; i++) if (estado.categorias[i].id === id) cat = estado.categorias[i];
-		if (!cat) return;
-		editarCatId = id;
-		var previo = cat.nombre;
+	function entrarEdicionCat(cat) {
+		editarCatId = cat.id;
 		$('altaCatTitulo').textContent = 'EDITAR CATEGORÍA';
 		$('altaCatNombre').value = cat.nombre;
-		$('altaCatNombre').dataset.previo = previo;
 		$('altaCatLimite').value = cat.limite === null ? '' : cat.limite;
 		$('altaCatMoneda').value = cat.moneda;
 		$('altaCatBtn').textContent = 'GUARDAR';
@@ -559,51 +523,41 @@
 
 	function salirEdicionCat() {
 		editarCatId = null;
-		delete $('altaCatNombre').dataset.previo;
 		$('altaCatTitulo').textContent = 'AGREGAR CATEGORÍA';
 		$('altaCatForm').reset();
 		$('altaCatBtn').textContent = 'AGREGAR';
 		$('altaCatCancelar').hidden = true;
 	}
 
-	$('altaCatForm').addEventListener('submit', function (e) {
+	$('altaCatForm').addEventListener('submit', async function (e) {
 		e.preventDefault();
-		var nombre = $('altaCatNombre').value.trim();
 		var limiteTxt = ($('altaCatLimite').value || '').replace(',', '.');
-		var limite = limiteTxt === '' ? null : parseFloat(limiteTxt);
-		var moneda = $('altaCatMoneda').value;
-		if (!nombre) return;
-		if (editarCatId !== null) {
-			var previo = $('altaCatNombre').dataset.previo;
-			for (var i = 0; i < estado.categorias.length; i++) if (estado.categorias[i].id === editarCatId) {
-				estado.categorias[i].nombre = nombre;
-				estado.categorias[i].limite = limite;
-				estado.categorias[i].moneda = moneda;
+		var cuerpo = {
+			nombre: $('altaCatNombre').value.trim(),
+			limite: limiteTxt === '' ? null : parseFloat(limiteTxt),
+			moneda: $('altaCatMoneda').value,
+		};
+		try {
+			if (editarCatId !== null) {
+				await mutar('/api/categorias/' + editarCatId, 'PATCH', cuerpo, 'Categoría «' + cuerpo.nombre + '» guardada.');
+				salirEdicionCat();
+			} else {
+				await mutar('/api/categorias', 'POST', cuerpo, 'Categoría «' + cuerpo.nombre + '» agregada.');
+				salirEdicionCat();
 			}
-			for (var k = 0; k < estado.movimientos.length; k++) if (estado.movimientos[k].categoria === previo) estado.movimientos[k].categoria = nombre;
-			salirEdicionCat();
-			renderTodo();
-			mostrarEstado('Categoría «' + nombre + '» guardada.', 'aviso-exito');
-		} else {
-			estado.categorias.push({ id: estado.seq++, nombre: nombre, limite: limite, moneda: moneda });
-			salirEdicionCat();
-			renderTodo();
-			mostrarEstado('Categoría «' + nombre + '» agregada.', 'aviso-exito');
-		}
+		} catch (err) { /* aviso en pantalla */ }
 	});
 
-	$('altaCatCancelar').addEventListener('click', function () {
-		salirEdicionCat();
-		renderPresu();
-	});
+	$('altaCatCancelar').addEventListener('click', salirEdicionCat);
 
-	// ---------- carteles (12 meses, año calendario ENE→DIC) ----------
+	// ---------- carteles (12 meses del año, derivados de asientos reales) ----------
 
 	function renderCarteles() {
 		var grilla = $('cartelesGrilla');
 		grilla.innerHTML = '';
+		var Wc = Math.max(320, Math.round((grilla.clientWidth - 22) / 2));
 		['ARS', 'USD'].forEach(function (moneda) {
-			var serie = SERIES_DEMO[moneda];
+			var serie = serieDelAno(moneda);
 			var ingTotal = 0;
 			var gasTotal = 0;
 			for (var m = 0; m < 12; m++) {
@@ -615,11 +569,11 @@
 			var articulo = el('article', 'cartel');
 			var titulos = el('div', 'cartel-titulos');
 			var head = el('span', 'cartel-head');
-			head.appendChild(el('small', null, 'AÑO ' + ANO + ' · ' + moneda + ' · SERIE DE EJEMPLO'));
+			head.appendChild(el('small', null, 'AÑO ' + estado.anio + ' · ' + moneda));
 			head.appendChild(document.createTextNode('ING ' + fmt(ingTotal, moneda) + ' · GAS ' + fmt(gasTotal, moneda)));
 			titulos.appendChild(head);
 			articulo.appendChild(titulos);
-			articulo.appendChild(graficoAño(serie, moneda, 'grafico', 'Ingresos y egresos mensuales en ' + moneda + ', año ' + ANO));
+			articulo.appendChild(graficoAnual(serie, 'grafico', 'Ingresos y egresos mensuales en ' + moneda + ', año ' + estado.anio, Wc));
 			var leyenda = el('div', 'leyenda rotulo');
 			var l1 = el('span');
 			l1.appendChild(el('i', 'ley-inge'));
@@ -629,15 +583,15 @@
 			l2.appendChild(document.createTextNode('EGRESOS'));
 			leyenda.appendChild(l1);
 			leyenda.appendChild(l2);
-			leyenda.appendChild(el('span', 'leyenda-nota', 'DATOS DE EJEMPLO'));
+			if (ingTotal === 0 && gasTotal === 0) {
+				leyenda.appendChild(el('span', 'leyenda-nota', 'SIN DATOS AÚN · CARGA ASIENTOS Y VOLVÉ'));
+			}
 			articulo.appendChild(leyenda);
 			grilla.appendChild(articulo);
 		});
 	}
 
-	// ---------- captura: alta, modo edición, recurrencia ----------
-
-	var editarMvId = null;
+	// ---------- captura: alta o modo edición, con recurrencia ----------
 
 	function sincronizarSelects() {
 		var cuentaSel = $('capCuenta');
@@ -645,7 +599,7 @@
 		cuentaSel.innerHTML = '';
 		for (var i = 0; i < estado.cuentas.length; i++) {
 			var o = el('option', null, estado.cuentas[i].nombre + ' · ' + estado.cuentas[i].moneda);
-			o.value = estado.cuentas[i].nombre;
+			o.value = String(estado.cuentas[i].id);
 			cuentaSel.appendChild(o);
 		}
 		if (actual) cuentaSel.value = actual;
@@ -678,18 +632,18 @@
 		renderPresu();
 		renderLibro(nuevosIds);
 		renderCarteles();
+		renderMesNav();
 		sincronizarSelects();
 	}
 
-	// captura: alta o guardar edición
-	$('capturaForm').addEventListener('submit', function (e) {
+	$('capturaForm').addEventListener('submit', async function (e) {
 		e.preventDefault();
 
 		var fecha = $('capFecha').value;
 		var monto = parseFloat(($('capMonto').value || '').replace(',', '.'));
 		var concepto = $('capConcepto').value.trim();
-		var cuenta = $('capCuenta').value;
-		var categoria = $('capCategoria').value;
+		var cuentaId = parseInt($('capCuenta').value, 10);
+		var catId = parseInt($('capCategoria').value, 10);
 		var moneda = $('capMoneda').value;
 		var egreso = document.querySelector('input[name="capTipo"]:checked').value === 'egreso';
 		var rec = $('capRec').checked;
@@ -700,78 +654,62 @@
 			mostrarEstado('Falta fecha, concepto o un monto mayor que cero. Corrige y anota de nuevo.', 'aviso-error');
 			return;
 		}
-		if (!cuenta) {
+		if (!Number.isFinite(cuentaId)) {
 			mostrarEstado('Primero agrega una cuenta en la sección CUENTAS.', 'aviso-error');
 			return;
 		}
 
-		var valor = egreso ? -monto : monto;
+		var cuerpo = {
+			fecha: fecha,
+			cuenta_id: cuentaId,
+			categoria_id: Number.isFinite(catId) ? catId : null,
+			concepto: concepto,
+			monto: monto,
+			es_ingreso: !egreso,
+			moneda: moneda,
+		};
+		if (rec) cuerpo.rec = { cuotas: cuotas };
 
-		if (editarMvId !== null) {
-			for (var i = 0; i < estado.movimientos.length; i++) {
-				if (estado.movimientos[i].id !== editarMvId) continue;
-				var m = estado.movimientos[i];
-				m.fecha = fecha;
-				m.concepto = concepto;
-				m.cuenta = cuenta;
-				m.categoria = categoria;
-				m.moneda = moneda;
-				m.valor = valor;
-
-				if (rec) {
-					var recId = m.recId || estado.seq++;
-					m.recId = recId;
-					estado.recurrencias[recId] = { cuotas: cuotas, concepto: concepto };
-					estado.movimientos = estado.movimientos.filter(function (x) {
-						return !(x.recId === recId && x.fecha > HOY_ISO);
-					});
-					estado.movimientos = estado.movimientos.concat(generarFuturos(recId, 2, cuotas, m));
-				} else if (m.recId) {
-					estado.movimientos = estado.movimientos.filter(function (x) {
-						return !(x.recId === m.recId && x.fecha > HOY_ISO);
-					});
-					delete estado.recurrencias[m.recId];
-					m.recId = null;
-				}
+		try {
+			var r;
+			if (editarMvId !== null) {
+				r = await pedir('/api/movimientos/' + editarMvId, {
+					method: 'PATCH',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(cuerpo),
+				});
+			} else {
+				r = await pedir('/api/movimientos', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(cuerpo),
+				});
 			}
-			editarMvId = null;
-			capturaModoAlta();
-			renderTodo();
-			mostrarEstado('Asiento guardado (demo, en memoria).', 'aviso-exito');
-			return;
+			if (!r.ok) {
+				mostrarEstado((await r.text()) || 'No se pudo registrar', 'aviso-error');
+				return;
+			}
+			var data = await r.json();
+			var nuevos = {};
+			nuevos[data.id] = true;
+			await cargarEstado();
+			renderTodo(nuevos);
+
+			if (editarMvId !== null) {
+				editarMvId = null;
+				capturaModoAlta();
+				mostrarEstado('Asiento guardado.', 'aviso-exito');
+			} else {
+				var msg = data.futuros > 0
+					? 'Asiento anotado + ' + data.futuros + ' asiento(s) futuro(s) ' + (cuotas === null ? 'de la recurrencia' : 'de las ' + cuotas + ' cuotas') + '.'
+					: 'Asiento anotado en el libro.';
+				capturaModoAlta();
+				mostrarEstado(msg, 'aviso-exito');
+				$('capMonto').focus();
+			}
+		} catch (err) {
+			mostrarEstado('Error de conexión con el servidor. Intenta de nuevo.', 'aviso-error');
 		}
-
-		// alta con El Sello
-		var id = estado.seq++;
-		var nuevos = {};
-		nuevos[id] = true;
-		var nuevoMv = mv(id, fecha, categoria, cuenta, concepto, valor, moneda, null);
-		var futuros = [];
-		if (rec) {
-			var recId2 = estado.seq++;
-			nuevoMv.recId = recId2;
-			estado.recurrencias[recId2] = { cuotas: cuotas, concepto: concepto };
-		}
-		estado.movimientos.push(nuevoMv);
-		if (rec) {
-			futuros = generarFuturos(recId2, 2, cuotas, nuevoMv);
-			estado.movimientos = estado.movimientos.concat(futuros);
-			for (var f = 0; f < futuros.length; f++) nuevos[futuros[f].id] = true;
-		}
-
-		renderTodo(nuevos);
-
-		var msgFuturos = futuros.length
-			? 'Asiento anotado + ' + futuros.length + ' asiento(s) futuro(s) ' + (cuotas === null ? 'de la recurrencia' : 'de las ' + cuotas + ' cuotas') + ' hasta fin de año' + (cuotas !== null && cuotas - 1 > futuros.length ? ' (el resto de las cuotas cae el año próximo; demo solo hasta diciembre)' : '') + '.'
-			: 'Asiento anotado en el libro. Datos de ejemplo: no se guarda.';
-		mostrarEstado(msgFuturos + ' (Demo, en memoria.)', 'aviso-exito');
-
-		$('capMonto').value = '';
-		$('capConcepto').value = '';
-		$('capRec').checked = false;
-		$('capCuotas').value = '';
-		actualizarRecFila();
-		$('capMonto').focus();
 	});
 
 	function capturaModoAlta() {
@@ -780,25 +718,25 @@
 		$('capturaCancelar').hidden = true;
 		$('capturaForm').classList.remove('captura-edit');
 		$('capturaForm').reset();
-		$('capFecha').value = HOY_ISO;
+		$('capFecha').value = estado.hoy;
 		actualizarRecFila();
 	}
 
-	function entrarEdicionAsiento(id) {
-		var m = null;
-		for (var i = 0; i < estado.movimientos.length; i++) if (estado.movimientos[i].id === id) m = estado.movimientos[i];
-		if (!m) return;
-		editarMvId = id;
+	function entrarEdicionAsiento(m) {
+		editarMvId = m.id;
 		$('capturaTitulo').textContent = 'EDITAR ASIENTO';
 		$('capFecha').value = m.fecha;
 		$('capMonto').value = String(Math.abs(m.valor));
 		$('capMoneda').value = m.moneda;
 		document.querySelector('input[name="capTipo"][value="' + (m.valor < 0 ? 'egreso' : 'ingreso') + '"]').checked = true;
 		sincronizarSelects();
-		$('capCuenta').value = m.cuenta;
-		$('capCategoria').value = m.categoria;
+		$('capCuenta').value = String(m.cuenta_id);
+		$('capCategoria').value = m.categoria_id === null ? '' : m.categoria;
 		$('capConcepto').value = m.concepto;
-		var rec = m.recId ? estado.recurrencias[m.recId] : null;
+		var rec = null;
+		for (var i = 0; i < estado.recurrencias.length; i++) {
+			if (estado.recurrencias[i].id === m.rec_id) rec = estado.recurrencias[i];
+		}
 		$('capRec').checked = !!rec;
 		$('capCuotas').value = rec && rec.cuotas !== null ? String(rec.cuotas) : '';
 		actualizarRecFila();
@@ -856,6 +794,21 @@
 	$('estadoCuentasBtn').addEventListener('click', function () { $('altaNombre').focus(); });
 	$('estadoPresuBtn').addEventListener('click', function () { $('altaCatNombre').focus(); });
 
+	// ---------- charts responsivos ----------
+
+	var resizePendiente = false;
+	window.addEventListener('resize', function () {
+		if (resizePendiente) return;
+		resizePendiente = true;
+		requestAnimationFrame(function () {
+			resizePendiente = false;
+			if (estado) {
+				renderMando();
+				renderCarteles();
+			}
+		});
+	});
+
 	// ---------- logout ----------
 
 	$('logoutBtn').addEventListener('click', async function () {
@@ -863,6 +816,16 @@
 		window.location.href = '/login';
 	});
 
-	// arranque
-	renderTodo();
+	// ---------- arranque ----------
+
+	cargarEstado()
+		.then(function () { renderTodo(); })
+		.catch(function (e) {
+			if (String(e.message) !== 'sesión expirada') {
+				var marco = document.querySelector('main');
+				var caja = el('div', 'estado-vacio');
+				caja.appendChild(el('span', 'rotulo', 'EL SERVIDOR NO CONTESTA EL ESTADO · RECARGA LA PÁGINA'));
+				if (marco) marco.appendChild(caja);
+			}
+		});
 })();

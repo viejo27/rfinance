@@ -33,7 +33,7 @@
 			<div class="franja-margen rotulo">
 				<span>CORTE: <b>{{ corte }}</b></span>
 				<span>MONEDAS: <b>ARS · USD</b> · SIN CONVERSIÓN</span>
-				<span>REGISTRO: <b>EN MEMORIA</b> · DATOS DE EJEMPLO</span>
+				<span>REGISTRO: <b>PERSISTIDO</b></span>
 			</div>
 
 			<section id="sec-mando" aria-labelledby="t-mando">
@@ -52,7 +52,7 @@
 					</div>
 
 					<div class="mando-histo">
-						<span class="rotulo">AÑO 2026 · ARS <b class="datos" id="netoAnual"></b></span>
+						<span class="rotulo"><span id="histoAno">AÑO</span> · ARS <b class="datos" id="netoAnual"></b></span>
 						<div id="mandoHisto"></div>
 					</div>
 
@@ -109,7 +109,7 @@
 						</div>
 						<div class="cap-concepto">
 							<label class="campo-label rotulo" for="capConcepto">CONCEPTO</label>
-							<input class="campo" type="text" id="capConcepto" name="concepto" maxlength="80" placeholder="¿Qué movimiento?" required>
+							<input class="campo" type="text" id="capConcepto" name="concepto" maxlength="200" placeholder="¿Qué movimiento?" required>
 						</div>
 						<button class="btn btn-primario" id="capturaBtn" type="submit">REGISTRAR</button>
 						<button class="btn" id="capturaCancelar" type="button" hidden>CANCELAR</button>
@@ -133,7 +133,7 @@
 					<div class="alta-linea">
 						<div class="alta-campo">
 							<label class="campo-label rotulo" for="altaNombre">NOMBRE</label>
-							<input class="campo" type="text" id="altaNombre" maxlength="40" placeholder="Billetera X" required>
+							<input class="campo" type="text" id="altaNombre" maxlength="100" placeholder="Billetera X" required>
 						</div>
 						<div class="alta-campo alta-campo-moneda">
 							<label class="campo-label rotulo" for="altaMoneda">MONEDA</label>
@@ -156,6 +156,13 @@
 
 			<section id="sec-libro" aria-labelledby="t-libro">
 				<h2 id="t-libro" class="banda"><span class="titulo-seccion">Libro contable</span></h2>
+
+				<div class="mes-nav">
+					<button class="mes-flecha prev" id="mesPrev" type="button" aria-label="Mes anterior"></button>
+					<span class="rotulo datos" id="mesVisto"></span>
+					<button class="mes-flecha next" id="mesNext" type="button" aria-label="Mes siguiente"></button>
+					<button class="btn btn-mini" id="mesHoy" type="button" hidden>VOLVER A HOY</button>
+				</div>
 
 				<div class="libro-filtros" role="search">
 					<label class="rotulo" for="fMoneda" hidden>Moneda</label>
@@ -189,13 +196,16 @@
 						<tbody id="libroCuerpo"></tbody>
 					</table>
 					<div class="libro-vacio" id="libroVacio">
-						<span class="rotulo">EL LIBRO ESTÁ VACÍO · ANOTA TU PRIMER ASIENTO ARRIBA</span>
+						<span class="rotulo" id="libroVacioTexto">EL LIBRO ESTÁ VACÍO · ANOTA TU PRIMER ASIENTO ARRIBA</span>
 					</div>
 				</div>
 			</section>
 
 			<section id="sec-presu" aria-labelledby="t-presu">
-				<h2 id="t-presu" class="banda"><span class="titulo-seccion">Presupuestos del mes</span></h2>
+				<h2 id="t-presu" class="banda">
+					<span class="titulo-seccion">Presupuestos del mes</span>
+					<span class="etiqueta-mes rotulo" id="presuMes" hidden></span>
+				</h2>
 
 				<ul class="presu" id="presuLista"></ul>
 
@@ -209,7 +219,7 @@
 					<div class="alta-linea">
 						<div class="alta-campo">
 							<label class="campo-label rotulo" for="altaCatNombre">NOMBRE</label>
-							<input class="campo" type="text" id="altaCatNombre" maxlength="40" placeholder="Mascota" required>
+							<input class="campo" type="text" id="altaCatNombre" maxlength="60" placeholder="Mascota" required>
 						</div>
 						<div class="alta-campo">
 							<label class="campo-label rotulo" for="altaCatLimite">LÍMITE MENSUAL <small>(OPCIONAL)</small></label>
@@ -236,8 +246,8 @@
 			</section>
 
 			<footer class="pie rotulo">
-				<span>* SECCIÓN <b>EN CONSTRUCCIÓN</b> · LLEGA CON EL BACKEND FINANCIERO</span>
-				<span>TODO VIVE <b>EN MEMORIA</b> DE ESTA PESTAÑA: SE BORRA AL RECARGAR</span>
+				<span>* SECCIÓN <b>EN CONSTRUCCIÓN</b> · INFORMES, DEUDAS, OBJETIVOS, INVERSIONES</span>
+				<span>LOS SALDOS SE LEEN <b>PERSISTIDOS</b></span>
 				<span class="marca">RFINANCE</span>
 			</footer>
 		</main>

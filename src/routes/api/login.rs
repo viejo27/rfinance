@@ -16,16 +16,18 @@ async fn login(
     pool: web::Data<PgPool>,
     session: Session,
 ) -> impl Responder {
-    let result: Option<(String,)> = sqlx::query_as("SELECT password FROM users WHERE email = $1")
-        .bind(&body.email)
-        .fetch_optional(pool.get_ref())
-        .await
-        .unwrap();
+    let result: Option<(String, i32)> =
+        sqlx::query_as("SELECT password, id FROM users WHERE email = $1")
+            .bind(&body.email)
+            .fetch_optional(pool.get_ref())
+            .await
+            .unwrap();
 
     match result {
-        Some((hashed_password,)) => {
+        Some((hashed_password, user_id)) => {
             if bcrypt::verify(&body.password, &hashed_password).unwrap_or(false) {
                 session.insert("user_email", &body.email).unwrap();
+                session.insert("user_id", user_id).unwrap();
 
                 let role: Option<(String,)> = sqlx::query_as(
                     "SELECT ud.role FROM users u

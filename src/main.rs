@@ -1,3 +1,4 @@
+mod fecha;
 mod middleware;
 mod role;
 mod routes;
@@ -6,7 +7,11 @@ use actix_session::{SessionMiddleware, config::PersistentSession, storage::Cooki
 use actix_web::{App, HttpServer, cookie::Key, web};
 use actix_web_grants::GrantsMiddleware;
 use dotenvy::dotenv;
-use routes::api::{api_login, api_logout, api_register};
+use routes::api::{
+    api_estado, api_login, api_logout, api_rec_borrar, api_register, categoria_borrar,
+    categoria_crear, categoria_patch, cuenta_borrar, cuenta_crear, cuenta_patch, movimiento_borrar,
+    movimiento_crear, movimiento_patch,
+};
 use routes::web::{admin_handler, index_handler, login_handler, register_handler};
 use sqlx::PgPool;
 use std::env;
@@ -55,9 +60,20 @@ async fn main() -> std::io::Result<()> {
             .service(index_handler)
             .service(login_handler)
             .service(register_handler)
+            .service(api_estado)
             .service(api_login)
             .service(api_register)
             .service(api_logout)
+            .service(cuenta_crear)
+            .service(cuenta_patch)
+            .service(cuenta_borrar)
+            .service(categoria_crear)
+            .service(categoria_patch)
+            .service(categoria_borrar)
+            .service(movimiento_crear)
+            .service(movimiento_patch)
+            .service(movimiento_borrar)
+            .service(api_rec_borrar)
             .service(actix_files::Files::new("/css", "static/css").show_files_listing())
             .service(actix_files::Files::new("/js", "static/js").show_files_listing())
             .service(actix_files::Files::new("/fonts", "static/fonts"))
