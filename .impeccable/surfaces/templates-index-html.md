@@ -29,3 +29,15 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
 - i18n: ES ahora; mecanismo EN queda abierto (strings ya centralizados en templates).
 - Esquema real de finanzas (tablas/monedas/conversión): llega con el backend; no inventar tasas.
 - admin.html: placeholder fuera de scope; recibe el mundo vía style.css, contenido intacto.
+
+## Extensión v2 — demo funcional en memoria (aprobada por el dueño)
+
+El dueño aprobó cinco extensiones y las corrigió: el dataset de ejemplo se CONSERVA como estado inicial editable (no arranca vacío); BORRAR usa confirm() nativo del navegador; encima, ventana DESHACER de unos segundos con la fila en tachado ANULADO antes de caer.
+
+1. Carteles a 12 meses, año calendario ENE→DIC fijo (no rodante); lectura anual ING/GAS 12M en el encabezado; presupuestos siguen mensuales + línea ANUAL (×12). Mando-histo pasa a AÑO 2026 (12 barras, ARS).
+2. Recurrencia en la captura: checkbox RECURRENTE que revela (corte duro) el campo CUOTAS; número = N cuotas desde hoy; vacío = indefinida (alquiler). Los meses futuros del año se materializan como asientos con chip RECURRENTE; borrarlos ofrece BORRAR ASIENTO vs BORRAR RECURRENCIA (cada uno con su confirm()).
+3. Cuentas con ALTAS: celda de alta inline (NOMBRE · MONEDA · SALDO INICIAL) con forma de bloque; EDITAR/BORRAR por cuenta; totales, saldos y select de captura recalculan. Nav CUENTAS pasa a ancla activa.
+4. Libro: EDITAR/BORRAR por fila. EDITAR levanta la fila a la banda de captura en modo edición (título "EDITAR ASIENTO", GUARDAR + CANCELAR, swap en corte duro). BORRAR = confirm() + ANULADO + DESHACER (4 s) antes de caer; sin confirm() custom ni modal.
+5. Categorías/presupuestos editables: AGREGAR CATEGORÍA inline (NOMBRE · LÍMITE MENSUAL opcional · MONEDA); EDITAR/BORRAR por fila; select de captura alimentado por esa lista; sin límite = "SIN LÍMITE" sin barra. Nav PRESUPUESTOS pasa a ancla.
+Persistencia: NINGUNA — todo en memoria de la pestaña; etiquetado "EN MEMORIA · DATOS DE EJEMPLO". Carteles: series sintéticas independientes del libro (etiquetadas); cuando exista backend, se derivarán de asientos reales.
+Nota de ejecución: el estado vive en JS (home.js) y los listados/bloques/gráficos se renderizan client-side; home.rs queda como host del andamio (email de sesión, CORTE, fecha default). El askama ya no renderiza listas dinámicas.

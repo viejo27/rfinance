@@ -241,7 +241,7 @@ a:hover {
 	width: 100%;
 	padding: 11px 12px;
 	font-family: var(--mono);
-	font-size: 0.95rem;
+	font-size: 0.9rem;
 	background: var(--papel-claro);
 	color: var(--tinta);
 	border: var(--grosor) solid var(--tinta);
@@ -381,6 +381,11 @@ input[type='date'].campo {
 
 .logout-btn:hover {
 	background-color: var(--rojo-hondo);
+}
+
+/* El [hidden] del UA se pierde ante cualquier display del author sheet — restauro */
+[hidden] {
+	display: none !important;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -208,7 +208,7 @@
 .total-sub {
 	display: block;
 	margin-top: 8px;
-	font-size: 0.74rem;
+	font-size: 0.78rem;
 	color: color-mix(in srgb, var(--papel) 65%, var(--tinta));
 }
 
@@ -263,7 +263,7 @@
 
 .captura .campo {
 	padding: 9px 10px;
-	font-size: 0.88rem;
+	font-size: 0.85rem;
 }
 
 .cap-fecha { width: 158px; }
@@ -326,7 +326,7 @@
 .captura-aviso {
 	flex-basis: 100%;
 	margin-top: 8px;
-	font-size: 0.8rem;
+	font-size: 0.78rem;
 }
 
 /* ---------- Cuentas ---------- */
@@ -421,7 +421,7 @@
 
 .libro-conteo {
 	margin-left: auto;
-	font-size: 0.74rem;
+	font-size: 0.78rem;
 	color: var(--tinta-2);
 }
 
@@ -493,7 +493,7 @@ table.libro th:last-child {
 table.libro td {
 	padding: 9px 14px;
 	border-top: 2px solid var(--papel);
-	font-size: 0.88rem;
+	font-size: 0.85rem;
 	vertical-align: baseline;
 }
 
@@ -642,7 +642,7 @@ table.libro td:has(.monto) {
 }
 
 .presu-nombre {
-	font-size: 0.8rem;
+	font-size: 0.78rem;
 	font-weight: 500;
 	text-transform: uppercase;
 	letter-spacing: 0.05em;
@@ -780,7 +780,7 @@ table.libro td:has(.monto) {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 8px 32px;
-	font-size: 0.74rem;
+	font-size: 0.78rem;
 	color: var(--tinta-2);
 }
 
@@ -793,6 +793,223 @@ table.libro td:has(.monto) {
 	color: var(--tinta);
 	font-size: 1rem;
 	margin-left: auto;
+}
+
+/* ---------- Componentes v2: acciones, altas, recurrencia, vacíos ---------- */
+
+.btn-mini {
+	font-family: var(--display);
+	font-size: 0.66rem;
+	padding: 4px 9px;
+	border: 2px solid var(--tinta);
+	background: var(--papel-claro);
+	color: var(--tinta);
+	box-shadow: none;
+}
+
+.btn-mini:hover {
+	background: var(--tinta);
+	color: var(--papel);
+}
+
+.btn-mini-peligro {
+	border-color: var(--tinta-2);
+	color: var(--tinta-2);
+}
+
+.btn-mini-peligro:hover,
+.btn-mini-peligro:focus-visible {
+	background: var(--rojo);
+	border-color: var(--rojo);
+	color: var(--papel);
+}
+
+.btn-deshacer {
+	border-color: var(--ocre);
+	color: var(--ocre);
+	background: var(--papel-claro);
+}
+
+.btn-deshacer:hover {
+	background: var(--ocre-barra);
+	border-color: var(--ocre-barra);
+	color: var(--papel);
+}
+
+.fila-acciones {
+	white-space: nowrap;
+	text-align: center;
+	display: flex;
+	gap: 6px;
+	justify-content: flex-end;
+}
+
+.chip-rec {
+	background: var(--tinta);
+	color: var(--papel);
+	margin-right: 8px;
+}
+
+.fila-futura .celda-fecha,
+.fila-futura .celda-cuenta {
+	color: var(--tinta-2);
+}
+
+.fila-anulada td {
+	text-decoration: line-through 2px var(--rojo);
+	opacity: 0.55;
+}
+
+.fila-anulada .fila-acciones {
+	text-decoration: none;
+	opacity: 1;
+}
+
+.fila-anulada .estampa-anulado {
+	text-decoration: none;
+	opacity: 1;
+}
+
+.estampa-anulado {
+	display: inline-block;
+	margin-left: 10px;
+	font-size: 0.66rem;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	border: 2px solid var(--rojo);
+	color: var(--rojo);
+	background: var(--papel-claro);
+	padding: 0 6px;
+	transform: rotate(-6deg);
+}
+
+/* fila de recurrencia revelada por el checkbox: corte duro */
+.cap-rec {
+	display: flex;
+	flex-direction: column;
+}
+
+.rec-par {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 9px 0;
+	cursor: pointer;
+}
+
+.cap-rec-fila {
+	display: none;
+	flex-basis: 100%;
+}
+
+.cap-rec.cap-rec-on + .cap-rec-fila {
+	display: block;
+}
+
+.cap-cuotas {
+	width: 220px;
+}
+
+.cap-cuotas small {
+	letter-spacing: 0.04em;
+}
+
+/* modo edición: la banda cambia de cara en un corte */
+.captura-edit {
+	border-color: var(--rojo);
+}
+
+.captura-edit .captura-titulo {
+	color: var(--rojo);
+}
+
+/* altas inline: la caja nueva tiene forma de bloque del mundo */
+.alta-caja {
+	border: 3px solid var(--tinta-2);
+	background: var(--papel-claro);
+	padding: 14px 18px 16px;
+	display: flex;
+	flex-direction: column;
+	margin-top: 18px;
+}
+
+.alta-linea {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: 6px 16px;
+}
+
+.alta-campo {
+	width: 180px;
+}
+
+.alta-campo-moneda {
+	width: 110px;
+}
+
+.alta-acciones {
+	display: flex;
+	gap: 8px;
+	margin-left: auto;
+}
+
+.alta-campo .campo-label {
+	margin-bottom: 4px;
+	font-size: 0.66rem;
+}
+
+.alta-campo .campo {
+	padding: 9px 10px;
+	font-size: 0.85rem;
+}
+
+/* acciones dentro de los bloques de cuenta */
+.cuenta-acciones,
+.presu-acciones {
+	display: flex;
+	gap: 6px;
+	margin-top: 10px;
+}
+
+.presu-acciones {
+	margin-top: 0;
+}
+
+/* presupuestos: 4 columnas con acciones */
+.presu-item {
+	grid-template-columns: 18ch minmax(0, 1fr) auto auto;
+}
+
+.presu-sin-barra {
+	background: var(--papel-claro);
+	border-style: solid;
+	border-color: var(--tinta-2);
+}
+
+.presu-sin-limite .presu-nombre {
+	color: var(--tinta-2);
+}
+
+/* estados de primer uso */
+.estado-vacio {
+	border: 2px solid var(--tinta);
+	background: var(--papel-claro);
+	padding: 20px 16px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 12px;
+	text-align: center;
+	margin-top: 18px;
+}
+
+.estado-vacio .rotulo {
+	color: var(--tinta-2);
+}
+
+.leyenda-nota {
+	color: var(--tinta-2);
 }
 
 /* ---------- Responsive: la grilla recompensa en celdas completas ---------- */
@@ -879,9 +1096,15 @@ table.libro td:has(.monto) {
 		grid-template-areas:
 			'fecha monto'
 			'concepto concepto'
-			'cat cuenta';
+			'cat cuenta'
+			'acciones acciones';
 		gap: 2px 12px;
 		padding: 12px 14px;
+	}
+
+	.fila-acciones {
+		grid-area: acciones;
+		justify-content: flex-start;
 	}
 
 	table.libro td {

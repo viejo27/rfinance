@@ -1,21 +1,21 @@
 <!DOCTYPE html>
 <html lang="es">
 	<head>
-		<title>RFinance — Registro</title>
+		<title>RFinance · Registro</title>
 		<meta charset="UTF-8">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		<link href="/css/style.css" rel="stylesheet">
 		<link href="/css/dashboard.css" rel="stylesheet">
 	</head>
-	<body class="app">
+	<body class="app" data-hoy="{{ hoy_iso }}">
 		<header class="shellbar">
 			<div class="shell-inner">
 				<a class="marca" href="/">RFINANCE</a>
 				<nav aria-label="Secciones de RFinance">
 					<ul class="nav-secciones">
 						<li><a class="nav-link nav-actual" href="/" aria-current="page">REGISTRO</a></li>
-						<li><span class="nav-link" aria-disabled="true">CUENTAS *</span></li>
-						<li><span class="nav-link" aria-disabled="true">PRESUPUESTOS *</span></li>
+						<li><a class="nav-link" href="#sec-cuentas">CUENTAS</a></li>
+						<li><a class="nav-link" href="#sec-presu">PRESUPUESTOS</a></li>
 						<li><span class="nav-link" aria-disabled="true">INFORMES *</span></li>
 						<li><span class="nav-link" aria-disabled="true">DEUDAS *</span></li>
 						<li><span class="nav-link" aria-disabled="true">OBJETIVOS *</span></li>
@@ -33,42 +33,31 @@
 			<div class="franja-margen rotulo">
 				<span>CORTE: <b>{{ corte }}</b></span>
 				<span>MONEDAS: <b>ARS · USD</b> · SIN CONVERSIÓN</span>
-				<span>REGISTRO: <b>DATOS DE EJEMPLO</b></span>
+				<span>REGISTRO: <b>EN MEMORIA</b> · DATOS DE EJEMPLO</span>
 			</div>
 
-			<section aria-labelledby="t-mando">
+			<section id="sec-mando" aria-labelledby="t-mando">
 				<h2 id="t-mando" class="banda"><span class="titulo-seccion">Banda de mando</span></h2>
 
 				<div class="mando">
 					<div class="mando-total">
 						<span class="rotulo">TOTAL · ARS</span>
-						<span class="total-num" id="totalArs">{{ total_ars }}</span>
-						<span class="total-sub">Efectivo · Banco Nación · Visa</span>
+						<span class="total-num" id="totalArs">0</span>
+						<span class="total-sub" id="subArs"></span>
 					</div>
 					<div class="mando-total">
 						<span class="rotulo">TOTAL · USD</span>
-						<span class="total-num" id="totalUsd">{{ total_usd }}</span>
-						<span class="total-sub">Reserva USD</span>
+						<span class="total-num" id="totalUsd">0,00</span>
+						<span class="total-sub" id="subUsd"></span>
 					</div>
 
 					<div class="mando-histo">
-						<span class="rotulo">SEIS MESES · ARS <b class="datos">{{ neto_mes }}</b></span>
-						<svg class="histo" viewBox="0 0 660 240" role="img" aria-label="Ingresos y egresos mensuales en pesos, de mayo a octubre">
-							{% for b in carteles[0].barras %}
-							<rect x="{{ b.x_ing }}" y="{{ b.y_ing }}" width="26" height="{{ b.h_ing }}" fill="var(--ocre-barra)"{% if loop.last %} stroke="var(--tinta)" stroke-width="2"{% endif %}>
-								<title>{{ b.mes }}: ingresos {{ b.ing_txt }} ARS</title>
-							</rect>
-							<rect x="{{ b.x_gas }}" y="{{ b.y_gas }}" width="26" height="{{ b.h_gas }}" fill="var(--rojo)"{% if loop.last %} stroke="var(--tinta)" stroke-width="2"{% endif %}>
-								<title>{{ b.mes }}: egresos {{ b.gas_txt }} ARS</title>
-							</rect>
-							<text x="{{ b.x_gas + 13 }}" y="226" text-anchor="middle">{{ b.mes }}</text>
-							{% endfor %}
-							<line class="eje" x1="8" y1="208" x2="652" y2="208"></line>
-						</svg>
+						<span class="rotulo">AÑO 2026 · ARS <b class="datos" id="netoAnual"></b></span>
+						<div id="mandoHisto"></div>
 					</div>
 
 					<form class="captura" id="capturaForm" aria-label="Carga rápida de asiento">
-						<span class="captura-titulo rotulo">ANOTAR EN EL LIBRO</span>
+						<span class="captura-titulo rotulo" id="capturaTitulo">ANOTAR EN EL LIBRO</span>
 						<div class="cap-fecha">
 							<label class="campo-label rotulo" for="capFecha">FECHA</label>
 							<input class="campo" type="date" id="capFecha" name="fecha" value="{{ hoy_iso }}" required>
@@ -99,44 +88,73 @@
 						</div>
 						<div class="cap-cuenta">
 							<label class="campo-label rotulo" for="capCuenta">CUENTA</label>
-							<select class="campo" id="capCuenta" name="cuenta">
-								{% for c in cuentas %}
-								<option value="{{ c.nombre }}">{{ c.nombre }} · {{ c.moneda }}</option>
-								{% endfor %}
-							</select>
+							<select class="campo" id="capCuenta" name="cuenta"></select>
 						</div>
 						<div class="cap-cat">
 							<label class="campo-label rotulo" for="capCategoria">CATEGORÍA</label>
-							<select class="campo" id="capCategoria" name="categoria">
-								{% for cat in categorias %}
-								<option value="{{ cat }}">{{ cat }}</option>
-								{% endfor %}
-							</select>
+							<select class="campo" id="capCategoria" name="categoria"></select>
+						</div>
+						<div class="cap-rec">
+							<span class="campo-label rotulo">RECURRENTE</span>
+							<label class="rec-par">
+								<input type="checkbox" id="capRec" name="rec">
+								<span class="rotulo">REPITE CADA MES</span>
+							</label>
+						</div>
+						<div class="cap-rec-fila">
+							<div class="cap-cuotas">
+								<label class="campo-label rotulo" for="capCuotas">CUOTAS <small>(VACÍO = SIN LÍMITE)</small></label>
+								<input class="campo" type="number" id="capCuotas" name="cuotas" min="1" max="600" placeholder="∞">
+							</div>
 						</div>
 						<div class="cap-concepto">
 							<label class="campo-label rotulo" for="capConcepto">CONCEPTO</label>
 							<input class="campo" type="text" id="capConcepto" name="concepto" maxlength="80" placeholder="¿Qué movimiento?" required>
 						</div>
-						<button class="btn btn-primario" type="submit">REGISTRAR</button>
+						<button class="btn btn-primario" id="capturaBtn" type="submit">REGISTRAR</button>
+						<button class="btn" id="capturaCancelar" type="button" hidden>CANCELAR</button>
 						<p class="aviso captura-aviso" id="capturaEstado" role="status" hidden></p>
 					</form>
 				</div>
 			</section>
 
-			<section aria-labelledby="t-cuentas">
+			<section id="sec-cuentas" aria-labelledby="t-cuentas">
 				<h2 id="t-cuentas" class="banda"><span class="titulo-seccion">Cuentas y billeteras</span></h2>
-				<div class="cuentas">
-					{% for c in cuentas %}
-					<div class="cuenta {% if c.moneda == "USD" %}cuenta-malla{% endif %}">
-						<span class="rotulo">{{ c.nombre }}</span>
-						<span class="cuenta-saldo {% if c.negativa %}cuenta-neg{% endif %}">{{ c.saldo }}</span>
-						<span class="cuenta-chip">{{ c.moneda }}</span>
-					</div>
-					{% endfor %}
+
+				<div class="cuentas" id="cuentasGrilla"></div>
+
+				<div class="estado-vacio" id="estadoCuentas" hidden>
+					<span class="rotulo">SIN CUENTAS · AGREGA LA PRIMERA</span>
+					<button class="btn btn-mini" id="estadoCuentasBtn" type="button">AGREGAR CUENTA</button>
 				</div>
+
+				<form class="alta-caja" id="altaCuentaForm" aria-label="Agregar cuenta">
+					<span class="rotulo" id="altaTitulo">AGREGAR CUENTA</span>
+					<div class="alta-linea">
+						<div class="alta-campo">
+							<label class="campo-label rotulo" for="altaNombre">NOMBRE</label>
+							<input class="campo" type="text" id="altaNombre" maxlength="40" placeholder="Billetera X" required>
+						</div>
+						<div class="alta-campo alta-campo-moneda">
+							<label class="campo-label rotulo" for="altaMoneda">MONEDA</label>
+							<select class="campo" id="altaMoneda">
+								<option value="ARS" selected>ARS</option>
+								<option value="USD">USD</option>
+							</select>
+						</div>
+						<div class="alta-campo">
+							<label class="campo-label rotulo" for="altaSaldo">SALDO INICIAL</label>
+							<input class="campo" type="number" id="altaSaldo" step="0.01" placeholder="0,00">
+						</div>
+						<div class="alta-acciones">
+							<button class="btn btn-primario" id="altaCuentaBtn" type="submit">AGREGAR</button>
+							<button class="btn" id="altaCuentaCancelar" type="button" hidden>CANCELAR</button>
+						</div>
+					</div>
+				</form>
 			</section>
 
-			<section aria-labelledby="t-libro">
+			<section id="sec-libro" aria-labelledby="t-libro">
 				<h2 id="t-libro" class="banda"><span class="titulo-seccion">Libro contable</span></h2>
 
 				<div class="libro-filtros" role="search">
@@ -149,9 +167,6 @@
 					<label class="rotulo" for="fCategoria" hidden>Categoría</label>
 					<select class="campo" id="fCategoria">
 						<option value="">TODAS CATEGORÍAS</option>
-						{% for cat in categorias %}
-						<option value="{{ cat }}">{{ cat | upper }}</option>
-						{% endfor %}
 					</select>
 					<label class="rotulo" for="fConcepto" hidden>Concepto</label>
 					<input class="campo campo-ancha" type="search" id="fConcepto" placeholder="BUSCAR CONCEPTO…">
@@ -168,75 +183,61 @@
 								<th scope="col" data-ordena="cuenta" aria-sort="none"><button type="button">CUENTA</button></th>
 								<th scope="col">CONCEPTO</th>
 								<th scope="col" data-ordena="valor" aria-sort="none"><button type="button">MONTO</button></th>
+								<th scope="col">ACCIONES</th>
 							</tr>
 						</thead>
-						<tbody id="libroCuerpo">
-							{% for m in movimientos %}
-							<tr class="movimiento" data-fecha="{{ m.iso_fecha }}" data-categoria="{{ m.categoria }}" data-cuenta="{{ m.cuenta }}" data-concepto="{{ m.concepto }}" data-valor="{{ m.valor }}" data-moneda="{{ m.moneda }}" data-egreso="{{ m.egreso }}">
-								<td class="celda-fecha">{{ m.fecha }}</td>
-								<td class="celda-cat">{{ m.categoria }}</td>
-								<td class="celda-cuenta">{{ m.cuenta }}</td>
-								<td class="celda-concepto">{{ m.concepto }}</td>
-								<td class="celda-monto {% if m.egreso %}egreso{% else %}ingreso{% endif %}">{{ m.monto }}</td>
-							</tr>
-							{% endfor %}
-						</tbody>
+						<tbody id="libroCuerpo"></tbody>
 					</table>
-					<div class="libro-vacio" id="libroVacio" hidden>
-						<span class="rotulo">NINGÚN ASIENTO PARA ESTE FILTRO. <a href="#" id="vacioLimpiar">LIMPIAR FILTROS</a></span>
+					<div class="libro-vacio" id="libroVacio">
+						<span class="rotulo">EL LIBRO ESTÁ VACÍO · ANOTA TU PRIMER ASIENTO ARRIBA</span>
 					</div>
 				</div>
 			</section>
 
-			<section aria-labelledby="t-presu">
+			<section id="sec-presu" aria-labelledby="t-presu">
 				<h2 id="t-presu" class="banda"><span class="titulo-seccion">Presupuestos del mes</span></h2>
-				<ul class="presu">
-					{% for p in presupuestos %}
-					<li class="presu-item {% if p.excedido %}presu-excedido{% endif %}">
-						<span class="presu-nombre">{{ p.nombre }}</span>
-						<div class="presu-barra" role="progressbar" aria-valuenow="{{ p.pct }}" aria-valuemin="0" aria-valuemax="100" aria-label="Ejecución de {{ p.nombre }}" style="--pct: {{ p.pct }}%"></div>
-						<span class="presu-lectura datos">{{ p.usado }} / {{ p.limite }} <span class="presu-pct">{{ p.pct }}%</span>{% if p.excedido %}<span class="etiqueta-excedido">EXCEDIDO</span>{% endif %}</span>
-					</li>
-					{% endfor %}
-				</ul>
+
+				<ul class="presu" id="presuLista"></ul>
+
+				<div class="estado-vacio" id="estadoPresu" hidden>
+					<span class="rotulo">SIN CATEGORÍAS · CREA LA PRIMERA</span>
+					<button class="btn btn-mini" id="estadoPresuBtn" type="button">AGREGAR CATEGORÍA</button>
+				</div>
+
+				<form class="alta-caja" id="altaCatForm" aria-label="Agregar categoría">
+					<span class="rotulo" id="altaCatTitulo">AGREGAR CATEGORÍA</span>
+					<div class="alta-linea">
+						<div class="alta-campo">
+							<label class="campo-label rotulo" for="altaCatNombre">NOMBRE</label>
+							<input class="campo" type="text" id="altaCatNombre" maxlength="40" placeholder="Mascota" required>
+						</div>
+						<div class="alta-campo">
+							<label class="campo-label rotulo" for="altaCatLimite">LÍMITE MENSUAL <small>(OPCIONAL)</small></label>
+							<input class="campo" type="number" id="altaCatLimite" step="0.01" min="0" placeholder="SIN LÍMITE">
+						</div>
+						<div class="alta-campo alta-campo-moneda">
+							<label class="campo-label rotulo" for="altaCatMoneda">MONEDA</label>
+							<select class="campo" id="altaCatMoneda">
+								<option value="ARS" selected>ARS</option>
+								<option value="USD">USD</option>
+							</select>
+						</div>
+						<div class="alta-acciones">
+							<button class="btn btn-primario" id="altaCatBtn" type="submit">AGREGAR</button>
+							<button class="btn" id="altaCatCancelar" type="button" hidden>CANCELAR</button>
+						</div>
+					</div>
+				</form>
 			</section>
 
-			<section aria-labelledby="t-carteles">
-				<h2 id="t-carteles" class="banda"><span class="titulo-seccion">Carteles del mes</span></h2>
-				<div class="carteles">
-					{% for c in carteles %}
-					<article class="cartel">
-						<div class="cartel-titulos">
-							<span class="cartel-head">
-								<small>SEIS MESES · {{ c.moneda }}</small>
-								ING {{ c.ing_total }} · GAS {{ c.gas_total }}
-							</span>
-						</div>
-						<svg class="grafico" viewBox="0 0 660 240" role="img" aria-label="Ingresos y egresos mensuales en {{ c.moneda }}, de mayo a octubre">
-							{% for b in c.barras %}
-							<rect x="{{ b.x_ing }}" y="{{ b.y_ing }}" width="26" height="{{ b.h_ing }}" fill="var(--ocre-barra)">
-								<title>{{ b.mes }}: ingresos {{ b.ing_txt }} {{ c.moneda }}</title>
-							</rect>
-							<rect x="{{ b.x_gas }}" y="{{ b.y_gas }}" width="26" height="{{ b.h_gas }}" fill="var(--rojo)">
-								<title>{{ b.mes }}: egresos {{ b.gas_txt }} {{ c.moneda }}</title>
-							</rect>
-							<text x="{{ b.x_gas + 13 }}" y="226" text-anchor="middle">{{ b.mes }}</text>
-							{% endfor %}
-							<line class="eje" x1="8" y1="208" x2="652" y2="208"></line>
-						</svg>
-						<div class="leyenda rotulo">
-							<span><i class="ley-inge"></i>INGRESOS</span>
-							<span><i class="ley-egre"></i>EGRESOS</span>
-							<span style="margin-left:auto">DATOS DE EJEMPLO</span>
-						</div>
-					</article>
-					{% endfor %}
-				</div>
+			<section id="sec-carteles" aria-labelledby="t-carteles">
+				<h2 id="t-carteles" class="banda"><span class="titulo-seccion">Carteles del año</span></h2>
+				<div class="carteles" id="cartelesGrilla"></div>
 			</section>
 
 			<footer class="pie rotulo">
-				<span>* SECCIÓN <b>EN CONSTRUCCIÓN</b> — LLEGA CON EL BACKEND FINANCIERO</span>
-				<span>LOS ASIENTOS ANOTADOS <b>NO SE GUARDAN</b>: SON DATOS DE EJEMPLO</span>
+				<span>* SECCIÓN <b>EN CONSTRUCCIÓN</b> · LLEGA CON EL BACKEND FINANCIERO</span>
+				<span>TODO VIVE <b>EN MEMORIA</b> DE ESTA PESTAÑA: SE BORRA AL RECARGAR</span>
 				<span class="marca">RFINANCE</span>
 			</footer>
 		</main>

@@ -4,39 +4,221 @@
   "title": "Design System: RFinance",
   "extensions": {
     "colorMeta": {
-      "rojo": { "role": "primary", "displayName": "Flag Oxide Red", "canonical": "#a82317", "tonalRamp": ["#7e140c", "#a82317", "#c2331f"] },
-      "rojo-hondo": { "role": "primary-deep", "displayName": "Deep Oxide Red", "canonical": "#7e140c", "tonalRamp": ["#7e140c", "#a82317", "#c2331f"] },
-      "rojo-grafico": { "role": "primary-graphic", "displayName": "Bright Poster Red", "canonical": "#c2331f", "tonalRamp": ["#7e140c", "#a82317", "#c2331f"] },
-      "ocre": { "role": "secondary", "displayName": "Ochre", "canonical": "#7e5300", "tonalRamp": ["#7e5300", "#a97209"] },
-      "ocre-barra": { "role": "secondary-bar", "displayName": "Warm Ochre", "canonical": "#a97209", "tonalRamp": ["#7e5300", "#a97209"] },
-      "concreto": { "role": "tertiary", "displayName": "Bare Concrete", "canonical": "#a8a49a", "tonalRamp": ["#a8a49a"] },
-      "tinta": { "role": "neutral", "displayName": "Ink Black", "canonical": "#1b1813", "tonalRamp": ["#1b1813", "#4e463b"] },
-      "tinta-2": { "role": "neutral-quiet", "displayName": "Spent Ink", "canonical": "#4e463b", "tonalRamp": ["#1b1813", "#4e463b"] },
-      "papel": { "role": "neutral", "displayName": "Aged Bone Paper", "canonical": "#ede6d3", "tonalRamp": ["#ede6d3", "#f6f1e2"] },
-      "papel-claro": { "role": "neutral-raised", "displayName": "Pale Bone Card", "canonical": "#f6f1e2", "tonalRamp": ["#ede6d3", "#f6f1e2"] }
+      "rojo": {
+        "role": "primary",
+        "displayName": "Flag Oxide Red",
+        "canonical": "#a82317",
+        "tonalRamp": [
+          "#7e140c",
+          "#a82317",
+          "#c2331f"
+        ]
+      },
+      "rojo-hondo": {
+        "role": "primary-deep",
+        "displayName": "Deep Oxide Red",
+        "canonical": "#7e140c",
+        "tonalRamp": [
+          "#7e140c",
+          "#a82317",
+          "#c2331f"
+        ]
+      },
+      "rojo-grafico": {
+        "role": "primary-graphic",
+        "displayName": "Bright Poster Red",
+        "canonical": "#c2331f",
+        "tonalRamp": [
+          "#7e140c",
+          "#a82317",
+          "#c2331f"
+        ]
+      },
+      "ocre": {
+        "role": "secondary",
+        "displayName": "Ochre",
+        "canonical": "#7e5300",
+        "tonalRamp": [
+          "#7e5300",
+          "#a97209"
+        ]
+      },
+      "ocre-barra": {
+        "role": "secondary-bar",
+        "displayName": "Warm Ochre",
+        "canonical": "#a97209",
+        "tonalRamp": [
+          "#7e5300",
+          "#a97209"
+        ]
+      },
+      "concreto": {
+        "role": "tertiary",
+        "displayName": "Bare Concrete",
+        "canonical": "#a8a49a",
+        "tonalRamp": [
+          "#a8a49a"
+        ]
+      },
+      "tinta": {
+        "role": "neutral",
+        "displayName": "Ink Black",
+        "canonical": "#1b1813",
+        "tonalRamp": [
+          "#1b1813",
+          "#4e463b"
+        ]
+      },
+      "tinta-2": {
+        "role": "neutral-quiet",
+        "displayName": "Spent Ink",
+        "canonical": "#4e463b",
+        "tonalRamp": [
+          "#1b1813",
+          "#4e463b"
+        ]
+      },
+      "papel": {
+        "role": "neutral",
+        "displayName": "Aged Bone Paper",
+        "canonical": "#ede6d3",
+        "tonalRamp": [
+          "#ede6d3",
+          "#f6f1e2"
+        ]
+      },
+      "papel-claro": {
+        "role": "neutral-raised",
+        "displayName": "Pale Bone Card",
+        "canonical": "#f6f1e2",
+        "tonalRamp": [
+          "#ede6d3",
+          "#f6f1e2"
+        ]
+      }
     },
     "typographyMeta": {
-      "display": { "displayName": "Anton — Poster Voice", "purpose": "Numerals and button type in capitals: hero totals clamp(2.8rem,5vw,6rem), balances 1.9rem, chart heads, 1.05rem buttons. Never inside tables." },
-      "stencil": { "displayName": "Saira Stencil One — Stamp Voice", "purpose": "Wordmark (1.55rem on ink, 2.6rem on auth) and section titles (1.5rem) inside red bands only." },
-      "body": { "displayName": "JetBrains Mono — Ledger Voice", "purpose": "Default page voice, 15px/1.55; every form value and table cell." },
-      "label": { "displayName": "Rotulo — Micro-caps Label", "purpose": "Field labels, marginal strips, footers: 0.7rem weight 500 uppercase, letter-spacing 0.09em. Chips run hotter: 0.66rem/700/0.1em." },
-      "data": { "displayName": "Datos — Tabular Data", "purpose": "font-variant-numeric: tabular-nums on all amounts, dates (8.5ch fixed), counts, percentages." }
+      "display": {
+        "displayName": "Anton — Poster Voice",
+        "purpose": "Numerals and button type in capitals: hero totals clamp(2.8rem,5vw,6rem), balances 1.9rem, chart heads, 1.05rem buttons. Never inside tables."
+      },
+      "stencil": {
+        "displayName": "Saira Stencil One — Stamp Voice",
+        "purpose": "Wordmark (1.55rem on ink, 2.6rem on auth) and section titles (1.5rem) inside red bands only."
+      },
+      "body": {
+        "displayName": "JetBrains Mono — Ledger Voice",
+        "purpose": "Default page voice, 15px/1.55; every form value and table cell."
+      },
+      "label": {
+        "displayName": "Rotulo — Micro-caps Label",
+        "purpose": "Field labels, marginal strips, footers: 0.7rem weight 500 uppercase, letter-spacing 0.09em. Chips run hotter: 0.66rem/700/0.1em."
+      },
+      "data": {
+        "displayName": "Datos — Tabular Data",
+        "purpose": "font-variant-numeric: tabular-nums on all amounts, dates (8.5ch fixed), counts, percentages."
+      },
+      "label-mini": {
+        "displayName": "Mini Label",
+        "purpose": "Rotulación compacta: botones mini, chips y estampas."
+      },
+      "meta": {
+        "displayName": "Meta",
+        "purpose": "Columnas de datos marginales (franja, celdas meta del libro móvil)."
+      },
+      "small": {
+        "displayName": "Small",
+        "purpose": "Texto pequeño de control: selects de filtros, lecturas de bloque."
+      },
+      "body-small": {
+        "displayName": "Body Small",
+        "purpose": "Campos compactos de captura y altas inline."
+      },
+      "campo": {
+        "displayName": "Campo",
+        "purpose": "Texto base de campos y avisos."
+      },
+      "ttl": {
+        "displayName": "Title",
+        "purpose": "Botones y rotulación en Anton."
+      },
+      "saldo": {
+        "displayName": "Saldo",
+        "purpose": "Numerales de bloque de cuenta."
+      },
+      "submarca": {
+        "displayName": "Submarca",
+        "purpose": "Marca del pie."
+      },
+      "monto-movil": {
+        "displayName": "Monto Móvil",
+        "purpose": "Montos del libro recompacto en teléfonos."
+      },
+      "marca-shell": {
+        "displayName": "Marca Shell",
+        "purpose": "Marca de la barra shell."
+      },
+      "marca-auth": {
+        "displayName": "Marca Auth",
+        "purpose": "Marca grande de páginas de sesión."
+      },
+      "data-svg": {
+        "displayName": "Data SVG",
+        "purpose": "Etiquetas de eje de los carteles."
+      }
     },
     "shadows": [
-      { "name": "control-lift", "value": "4px 4px 0 var(--tinta)", "purpose": "Hard offset under primary buttons only (.btn-primario); cancelled on :active with translate(2px,2px)." },
-      { "name": "surface-lift", "value": "8px 8px 0 var(--tinta)", "purpose": "Sheet-set-on-desk depth for the auth box (.auth-caja) and admin panel (.panel-admin). Zero blur, ink color, offset only." }
+      {
+        "name": "control-lift",
+        "value": "4px 4px 0 var(--tinta)",
+        "purpose": "Hard offset under primary buttons only (.btn-primario); cancelled on :active with translate(2px,2px)."
+      },
+      {
+        "name": "surface-lift",
+        "value": "8px 8px 0 var(--tinta)",
+        "purpose": "Sheet-set-on-desk depth for the auth box (.auth-caja) and admin panel (.panel-admin). Zero blur, ink color, offset only."
+      }
     ],
     "motion": [
-      { "name": "paso", "value": "steps(2, end)", "purpose": "The only timing function in the system (--paso). All state change is a two-frame hard cut; controls otherwise carry transition: none." },
-      { "name": "sello-cae", "value": "sello-cae 180ms steps(2, end) 1", "purpose": "New ledger row cuts from solid rojo block to paper — the stamp lands." },
-      { "name": "total-brusco", "value": "total-brusco 180ms steps(2, end) 1", "purpose": "Totals block background cuts rojo-grafico to tinta when its currency is touched." },
-      { "name": "estampa-pop", "value": "estampa-pop 90ms steps(2, end) 1", "purpose": "ANOTADO rubber stamp snaps from scale 1.9 / 0.4 opacity to rest (rotate -6deg) in one hard frame." },
-      { "name": "sello-marca", "value": "none", "purpose": "The stamp at rest has no motion; under prefers-reduced-motion animations are removed and the mark is not generated at all." }
+      {
+        "name": "paso",
+        "value": "steps(2, end)",
+        "purpose": "The only timing function in the system (--paso). All state change is a two-frame hard cut; controls otherwise carry transition: none."
+      },
+      {
+        "name": "sello-cae",
+        "value": "sello-cae 180ms steps(2, end) 1",
+        "purpose": "New ledger row cuts from solid rojo block to paper — the stamp lands."
+      },
+      {
+        "name": "total-brusco",
+        "value": "total-brusco 180ms steps(2, end) 1",
+        "purpose": "Totals block background cuts rojo-grafico to tinta when its currency is touched."
+      },
+      {
+        "name": "estampa-pop",
+        "value": "estampa-pop 90ms steps(2, end) 1",
+        "purpose": "ANOTADO rubber stamp snaps from scale 1.9 / 0.4 opacity to rest (rotate -6deg) in one hard frame."
+      },
+      {
+        "name": "sello-marca",
+        "value": "none",
+        "purpose": "The stamp at rest has no motion; under prefers-reduced-motion animations are removed and the mark is not generated at all."
+      }
     ],
     "breakpoints": [
-      { "name": "tablet", "value": "1024px" },
-      { "name": "phone", "value": "640px" },
-      { "name": "container", "value": "1280px" }
+      {
+        "name": "tablet",
+        "value": "1024px"
+      },
+      {
+        "name": "phone",
+        "value": "640px"
+      },
+      {
+        "name": "container",
+        "value": "1280px"
+      }
     ]
   },
   "components": [
@@ -126,16 +308,56 @@
       "Dense ruled blocks float in wide paper margins; nothing is printed around them."
     ],
     "rules": [
-      { "name": "The Semantic Labor Rule", "body": "Every palette member has a job: rojo = egreso/déficit/acción primaria, ocre = ingreso/positivo, tinta/papel = estructura/ground, concreto = secundario. Never decorate with a color whose job the context contradicts — red never marks a success, ochre never marks an expense.", "section": "colors" },
-      { "name": "The Texture-by-Blend Rule", "body": "Material character comes from grayscale raster grain (.textures/papel-hueso.png, .textures/concreto.png, procedural with embedded provenance) multiplied over a token color — background-blend-mode: multiply — never from pre-tinted images or gradients. The color is always a :root token; the grain is always achromatic.", "section": "colors" },
-      { "name": "The Mono-Means-Data Rule", "body": "Anything that varies row to row — ledger cells, form values, dates, counts, chart labels — is JetBrains Mono with tabular figures. Anton numerals exist only as printed posters (headline totals, balances, chart heads), never inside tables.", "section": "typography" },
-      { "name": "The No-Kicker Rule (as practiced)", "body": "The red clipped band *is* the section title — no eyebrow line is ever printed above a heading. Small-caps mono text exists only when it does work: naming a field, carrying a date/currency/count, or declaring state (DEMO, EXCEDIDO, ANOTADO, DATOS DE EJEMPLO).", "section": "typography" },
-      { "name": "The Full-Cell Recompress Rule", "body": "When the grid narrows, cells re-compose as complete units — rows become stacked labeled blocks; a column is never left orphaned, and table.libro drops to min-width: 0 instead of scrolling.", "section": "layout" },
-      { "name": "The Pressed-Shadow Rule", "body": "Offsets are hard, 0-blur, and ink-colored; they appear only under primary actions and standalone sheets. A control's :active state cancels its shadow and shifts 2px down-right — depth is mechanical press, never atmosphere.", "section": "elevation" },
-      { "name": "The Single Cut Rule", "body": "If an edge is slanted it came from one of exactly three sources: the 26px band clip, a −30° wedge, or the −6° stamp tilt. New angles are not added; the cut system also governs chart bar width (26px rects) and the seal — one angle across bands, bars, and sellos.", "section": "shapes" },
-      { "name": "The Zero-Radius Rule", "body": "No corner is softened at any scale — not buttons, not inputs, not panels. Roundness is a defect in this world.", "section": "shapes" },
-      { "name": "The Destructive Isolation Rule", "body": "Log out and delete controls are physically separated, rendered outline-at-rest, and only resolve on deliberate hover/focus. They never carry the primary action's red fill or lift shadow at rest.", "section": "components" },
-      { "name": "The Step-Cut Rule (no easing)", "body": "Every state change is either instant (transition: none on controls) or a two-frame steps(2, end) cut at 90–180ms. Nothing fades, slides, or eases; under prefers-reduced-motion all animation is removed and stamp marks are not generated at all.", "section": "components" }
+      {
+        "name": "The Semantic Labor Rule",
+        "body": "Every palette member has a job: rojo = egreso/déficit/acción primaria, ocre = ingreso/positivo, tinta/papel = estructura/ground, concreto = secundario. Never decorate with a color whose job the context contradicts — red never marks a success, ochre never marks an expense.",
+        "section": "colors"
+      },
+      {
+        "name": "The Texture-by-Blend Rule",
+        "body": "Material character comes from grayscale raster grain (.textures/papel-hueso.png, .textures/concreto.png, procedural with embedded provenance) multiplied over a token color — background-blend-mode: multiply — never from pre-tinted images or gradients. The color is always a :root token; the grain is always achromatic.",
+        "section": "colors"
+      },
+      {
+        "name": "The Mono-Means-Data Rule",
+        "body": "Anything that varies row to row — ledger cells, form values, dates, counts, chart labels — is JetBrains Mono with tabular figures. Anton numerals exist only as printed posters (headline totals, balances, chart heads), never inside tables.",
+        "section": "typography"
+      },
+      {
+        "name": "The No-Kicker Rule (as practiced)",
+        "body": "The red clipped band *is* the section title — no eyebrow line is ever printed above a heading. Small-caps mono text exists only when it does work: naming a field, carrying a date/currency/count, or declaring state (DEMO, EXCEDIDO, ANOTADO, DATOS DE EJEMPLO).",
+        "section": "typography"
+      },
+      {
+        "name": "The Full-Cell Recompress Rule",
+        "body": "When the grid narrows, cells re-compose as complete units — rows become stacked labeled blocks; a column is never left orphaned, and table.libro drops to min-width: 0 instead of scrolling.",
+        "section": "layout"
+      },
+      {
+        "name": "The Pressed-Shadow Rule",
+        "body": "Offsets are hard, 0-blur, and ink-colored; they appear only under primary actions and standalone sheets. A control's :active state cancels its shadow and shifts 2px down-right — depth is mechanical press, never atmosphere.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Single Cut Rule",
+        "body": "If an edge is slanted it came from one of exactly three sources: the 26px band clip, a −30° wedge, or the −6° stamp tilt. New angles are not added; the cut system also governs chart bar width (26px rects) and the seal — one angle across bands, bars, and sellos.",
+        "section": "shapes"
+      },
+      {
+        "name": "The Zero-Radius Rule",
+        "body": "No corner is softened at any scale — not buttons, not inputs, not panels. Roundness is a defect in this world.",
+        "section": "shapes"
+      },
+      {
+        "name": "The Destructive Isolation Rule",
+        "body": "Log out and delete controls are physically separated, rendered outline-at-rest, and only resolve on deliberate hover/focus. They never carry the primary action's red fill or lift shadow at rest.",
+        "section": "components"
+      },
+      {
+        "name": "The Step-Cut Rule (no easing)",
+        "body": "Every state change is either instant (transition: none on controls) or a two-frame steps(2, end) cut at 90–180ms. Nothing fades, slides, or eases; under prefers-reduced-motion all animation is removed and stamp marks are not generated at all.",
+        "section": "components"
+      }
     ],
     "dos": [
       "Do source every color from the five :root materials; if a needed value isn't in :root, the design isn't done yet — extend the token, then use it.",

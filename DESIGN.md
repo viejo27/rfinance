@@ -35,6 +35,58 @@ typography:
     fontSize: "0.7rem"
     fontWeight: 500
     letterSpacing: "0.09em"
+  label-mini:
+    fontFamily: "'JetBrains Mono', ui-monospace, 'DejaVu Sans Mono', monospace"
+    fontSize: "0.66rem"
+    fontWeight: 500
+    letterSpacing: "0.09em"
+  meta:
+    fontFamily: "'JetBrains Mono', ui-monospace, 'DejaVu Sans Mono', monospace"
+    fontSize: "0.72rem"
+    fontWeight: 400
+    letterSpacing: "0.06em"
+  small:
+    fontFamily: "'JetBrains Mono', ui-monospace, 'DejaVu Sans Mono', monospace"
+    fontSize: "0.78rem"
+    fontWeight: 400
+  body-small:
+    fontFamily: "'JetBrains Mono', ui-monospace, 'DejaVu Sans Mono', monospace"
+    fontSize: "0.85rem"
+    fontWeight: 400
+  campo:
+    fontFamily: "'JetBrains Mono', ui-monospace, 'DejaVu Sans Mono', monospace"
+    fontSize: "0.9rem"
+    fontWeight: 400
+  ttl:
+    fontFamily: "'Anton', 'Arial Narrow', sans-serif"
+    fontSize: "1.05rem"
+    fontWeight: 400
+    letterSpacing: "0.04em"
+  saldo:
+    fontFamily: "'Anton', 'Arial Narrow', sans-serif"
+    fontSize: "1.9rem"
+    fontWeight: 400
+    lineHeight: 1
+  submarca:
+    fontFamily: "'Saira Stencil One', 'Anton', sans-serif"
+    fontSize: "1rem"
+    fontWeight: 400
+  monto-movil:
+    fontFamily: "'JetBrains Mono', ui-monospace, 'DejaVu Sans Mono', monospace"
+    fontSize: "1rem"
+    fontFeature: "'tnum' 1"
+  marca-shell:
+    fontFamily: "'Saira Stencil One', 'Anton', sans-serif"
+    fontSize: "1.55rem"
+    fontWeight: 400
+  marca-auth:
+    fontFamily: "'Saira Stencil One', 'Anton', sans-serif"
+    fontSize: "2.6rem"
+    fontWeight: 400
+    lineHeight: 1
+  data-svg:
+    fontFamily: "'JetBrains Mono', ui-monospace, 'DejaVu Sans Mono', monospace"
+    fontSize: "9px"
   data:
     fontFamily: "'JetBrains Mono', ui-monospace, 'DejaVu Sans Mono', monospace"
     fontFeature: "'tnum' 1"
