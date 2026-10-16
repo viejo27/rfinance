@@ -46,6 +46,23 @@ There are no automated tests in the repository yet. When adding some, prefer
 
 ## Code Style Guidelines
 
+### Naming: identifiers in English
+- Every identifier is written in English: Rust and JS functions and
+  variables, types, struct fields, module and file names, database tables,
+  columns and indexes, CSS classes, DOM ids, API routes and JSON keys.
+- User-facing copy (messages, labels, template text) and code comments
+  stay in Spanish.
+- Domain vocabulary (canonical translations): asiento/movimiento=transaction,
+  cuenta=account, categoria=category, recurrencia=recurrence, cuota=installment,
+  concepto=description, monto=amount, moneda=currency, fecha=entry_date,
+  ingreso/egreso=income/expense, libro=ledger, presupuesto=budget, cartel=card,
+  mando=overview, captura=entry, aviso=notice, rótulo=mini-label, celda=cell,
+  fila=row, anulado=void, programado=scheduled, alcance=scope,
+  saldo_inicial=opening_balance, limite=budget_limit, categoria_txt=category_label,
+  es_ingreso=is_income, creada_en/creado_en=created_at.
+- Never introduce a migration, column, class, id or identifier with a
+  Spanish name; if you find a legacy one, rename it in a dedicated change.
+
 ### Naming Conventions
 - Functions/variables: snake_case (`get_user`, `db_pool`)
 - Constants: SCREAMING_SNAKE_CASE (`MAX_CONNECTIONS`)
