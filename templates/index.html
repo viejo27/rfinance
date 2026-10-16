@@ -107,6 +107,19 @@
 								<input class="campo" type="number" id="capCuotas" name="cuotas" min="1" max="600" placeholder="∞">
 							</div>
 						</div>
+						<div class="cap-alcance" id="capAlcance">
+							<span class="campo-label rotulo">ALCANCE DE LA EDICIÓN</span>
+							<div class="tipo-pares">
+								<label class="tipo-opcion">
+									<input type="radio" name="capAlcance" value="unica" checked>
+									<span>SOLO ESTE ASIENTO</span>
+								</label>
+								<label class="tipo-opcion">
+									<input type="radio" name="capAlcance" value="siguientes">
+									<span>ESTE Y LOS SIGUIENTES</span>
+								</label>
+							</div>
+						</div>
 						<div class="cap-concepto">
 							<label class="campo-label rotulo" for="capConcepto">CONCEPTO</label>
 							<input class="campo" type="text" id="capConcepto" name="concepto" maxlength="200" placeholder="¿Qué movimiento?" required>

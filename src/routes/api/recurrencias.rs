@@ -143,7 +143,9 @@ pub async fn rec_borrar(
         Err(_) => return HttpResponse::InternalServerError().body("Error de conexión"),
     };
     match borrar_recurrencia(&mut conn, user_id, path.into_inner()).await {
-        Ok((futuros, _)) => HttpResponse::Ok().json(serde_json::json!({ "futurosBorrados": futuros })),
+        Ok((futuros, _)) => {
+            HttpResponse::Ok().json(serde_json::json!({ "futurosBorrados": futuros }))
+        }
         Err(_) => HttpResponse::InternalServerError().body("Error al borrar la recurrencia"),
     }
 }

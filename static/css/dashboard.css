@@ -983,6 +983,20 @@ table.libro td:has(.monto) {
 	display: block;
 }
 
+/* alcance al editar una fila de recurrencia: solo esta o también las siguientes */
+.cap-alcance {
+	display: none;
+	flex-basis: 100%;
+}
+
+.cap-alcance.cap-alcance-on {
+	display: block;
+}
+
+.cap-alcance .campo-label {
+	display: block;
+}
+
 .cap-cuotas {
 	width: 220px;
 }

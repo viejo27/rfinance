@@ -76,6 +76,7 @@
 	var timersUndo = {};
 	var orden = { clave: 'fecha', dir: -1 };
 	var editarMvId = null;
+	var editarEsDeRec = false; // la fila en edición pertenece a una recurrencia
 	var editarCuentaId = null;
 	var editarCatId = null;
 
@@ -673,6 +674,7 @@
 		try {
 			var r;
 			if (editarMvId !== null) {
+				cuerpo.alcance = alcanceElegido();
 				r = await pedir('/api/movimientos/' + editarMvId, {
 					method: 'PATCH',
 					headers: { 'Content-Type': 'application/json' },
@@ -698,7 +700,12 @@
 			if (editarMvId !== null) {
 				editarMvId = null;
 				capturaModoAlta();
-				mostrarEstado('Asiento guardado.', 'aviso-exito');
+				mostrarEstado(
+					data.futuros > 0
+						? 'Asiento guardado + ' + data.futuros + ' asiento(s) siguiente(s) actualizado(s).'
+						: 'Asiento guardado.',
+					'aviso-exito'
+				);
 			} else {
 				var msg = data.futuros > 0
 					? 'Asiento anotado + ' + data.futuros + ' asiento(s) futuro(s) ' + (cuotas === null ? 'de la recurrencia' : 'de las ' + cuotas + ' cuotas') + '.'
@@ -718,6 +725,10 @@
 		$('capturaCancelar').hidden = true;
 		$('capturaForm').classList.remove('captura-edit');
 		$('capturaForm').reset();
+		editarEsDeRec = false;
+		$('capAlcance').classList.remove('cap-alcance-on');
+		$('capRec').disabled = false;
+		$('capCuotas').disabled = false;
 		$('capFecha').value = estado.hoy;
 		actualizarRecFila();
 	}
@@ -737,9 +748,13 @@
 		for (var i = 0; i < estado.recurrencias.length; i++) {
 			if (estado.recurrencias[i].id === m.rec_id) rec = estado.recurrencias[i];
 		}
+		editarEsDeRec = !!m.rec_id;
+		$('capAlcance').classList.toggle('cap-alcance-on', editarEsDeRec);
+		document.querySelector('input[name="capAlcance"][value="unica"]').checked = true;
 		$('capRec').checked = !!rec;
 		$('capCuotas').value = rec && rec.cuotas !== null ? String(rec.cuotas) : '';
 		actualizarRecFila();
+		sincronizarAlcance();
 		$('capturaBtn').textContent = 'GUARDAR';
 		$('capturaCancelar').hidden = false;
 		$('capturaForm').classList.add('captura-edit');
@@ -756,6 +771,24 @@
 	function actualizarRecFila() {
 		$('capRec').closest('.cap-rec').classList.toggle('cap-rec-on', $('capRec').checked);
 	}
+
+	// ---------- alcance de la edición de una fila recurrente ----------
+
+	function alcanceElegido() {
+		var r = document.querySelector('input[name="capAlcance"]:checked');
+		return r ? r.value : 'unica';
+	}
+
+	function sincronizarAlcance() {
+		// con "solo este asiento" la serie no se toca: se congelan sus controles
+		var congelado = editarEsDeRec && alcanceElegido() === 'unica';
+		$('capRec').disabled = congelado;
+		$('capCuotas').disabled = congelado;
+	}
+
+	document.querySelectorAll('input[name="capAlcance"]').forEach(function (r) {
+		r.addEventListener('change', sincronizarAlcance);
+	});
 
 	// ---------- orden ----------
 
