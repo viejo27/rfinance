@@ -1,17 +1,17 @@
-pub mod categorias;
-pub mod cuentas;
-pub mod estado;
+pub mod accounts;
+pub mod categories;
 pub mod login;
 pub mod logout;
-pub mod movimientos;
-pub mod recurrencias;
+pub mod recurrences;
 pub mod register;
+pub mod snapshot;
+pub mod transactions;
 
-pub use categorias::{categoria_borrar, categoria_crear, categoria_patch};
-pub use cuentas::{cuenta_borrar, cuenta_crear, cuenta_patch};
-pub use estado::estado as api_estado;
+pub use accounts::{account_create, account_delete, account_update};
+pub use categories::{category_create, category_delete, category_update};
 pub use login::login as api_login;
 pub use logout::logout as api_logout;
-pub use movimientos::{movimiento_borrar, movimiento_crear, movimiento_patch};
-pub use recurrencias::rec_borrar as api_rec_borrar;
+pub use recurrences::recurrence_delete as api_recurrence_delete;
 pub use register::register as api_register;
+pub use snapshot::snapshot as api_snapshot;
+pub use transactions::{transaction_create, transaction_delete, transaction_update};

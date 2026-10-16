@@ -3,89 +3,89 @@ use actix_web::{HttpResponse, Responder, delete, patch, post, web};
 use serde::Deserialize;
 use sqlx::PgPool;
 
-use crate::routes::api::estado::usuario_de_sesion;
+use crate::routes::api::snapshot::session_user_id;
 
 /// Payload del form de alta/edición: el front siempre manda los tres
 /// campos completos (reemplazo total), así el límite puede volver a null.
 #[derive(Deserialize)]
-pub struct CategoriaIn {
-    pub nombre: String,
-    pub limite: Option<f64>,
-    pub moneda: String,
+pub struct CategoryInput {
+    pub name: String,
+    pub budget_limit: Option<f64>,
+    pub currency: String,
 }
 
-fn moneda_valida(moneda: &str) -> bool {
-    moneda == "ARS" || moneda == "USD"
+fn is_valid_currency(currency: &str) -> bool {
+    currency == "ARS" || currency == "USD"
 }
 
-pub async fn crear_categoria(
+pub async fn create_category(
     conn: &mut sqlx::PgConnection,
     user_id: i32,
-    input: &CategoriaIn,
+    input: &CategoryInput,
 ) -> Result<i32, String> {
-    let nombre = input.nombre.trim().to_string();
-    if nombre.is_empty() {
+    let name = input.name.trim().to_string();
+    if name.is_empty() {
         return Err("El nombre de la categoría es obligatorio".into());
     }
-    if !moneda_valida(&input.moneda) {
+    if !is_valid_currency(&input.currency) {
         return Err("La moneda debe ser ARS o USD".into());
     }
-    let duplicada: Option<(i32,)> =
-        sqlx::query_as("SELECT id FROM categorias WHERE user_id = $1 AND nombre = $2")
+    let duplicate: Option<(i32,)> =
+        sqlx::query_as("SELECT id FROM categories WHERE user_id = $1 AND name = $2")
             .bind(user_id)
-            .bind(&nombre)
+            .bind(&name)
             .fetch_optional(&mut *conn)
             .await
             .map_err(|_| "Error al verificar el nombre".to_string())?;
-    if duplicada.is_some() {
+    if duplicate.is_some() {
         return Err("Esa categoría ya existe".into());
     }
-    let fila: (i32,) = sqlx::query_as(
-        "INSERT INTO categorias (user_id, nombre, limite, moneda)
+    let row: (i32,) = sqlx::query_as(
+        "INSERT INTO categories (user_id, name, budget_limit, currency)
         VALUES ($1, $2, $3::numeric, $4) RETURNING id",
     )
     .bind(user_id)
-    .bind(&nombre)
-    .bind(input.limite)
-    .bind(&input.moneda)
+    .bind(&name)
+    .bind(input.budget_limit)
+    .bind(&input.currency)
     .fetch_one(&mut *conn)
     .await
     .map_err(|_| "Error al crear la categoría".to_string())?;
-    Ok(fila.0)
+    Ok(row.0)
 }
 
 /// Reemplazo completo de la categoría; el snapshot de texto de los
 /// asientos sincroniza al nuevo nombre.
-pub async fn editar_categoria(
+pub async fn update_category(
     conn: &mut sqlx::PgConnection,
     user_id: i32,
-    categoria_id: i32,
-    input: &CategoriaIn,
+    category_id: i32,
+    input: &CategoryInput,
 ) -> Result<(), String> {
-    let nombre = input.nombre.trim().to_string();
-    if nombre.is_empty() {
+    let name = input.name.trim().to_string();
+    if name.is_empty() {
         return Err("El nombre de la categoría es obligatorio".into());
     }
-    if !moneda_valida(&input.moneda) {
+    if !is_valid_currency(&input.currency) {
         return Err("La moneda debe ser ARS o USD".into());
     }
-    let previo: Option<(String,)> =
-        sqlx::query_as("SELECT nombre FROM categorias WHERE id = $1 AND user_id = $2")
-            .bind(categoria_id)
+    let previous: Option<(String,)> =
+        sqlx::query_as("SELECT name FROM categories WHERE id = $1 AND user_id = $2")
+            .bind(category_id)
             .bind(user_id)
             .fetch_optional(&mut *conn)
             .await
             .map_err(|_| "Error al buscar la categoría".to_string())?;
-    let previo = previo
+    let previous = previous
         .map(|(n,)| n)
         .ok_or_else(|| "Categoría no encontrada".to_string())?;
-    if nombre != previo {
+    if name != previous {
         let dup: Option<(i32,)> = sqlx::query_as(
-            "SELECT id FROM categorias WHERE user_id = $1 AND nombre = $2 AND id <> $3",
+            "SELECT id FROM categories WHERE user_id = $1 AND name = $2 AND id <> $3",
         )
         .bind(user_id)
-        .bind(&nombre)
-        .bind(categoria_id)
+        .bind(&name)
+        .bind(category_id)
         .fetch_optional(&mut *conn)
         .await
         .map_err(|_| "Error al verificar el nombre".to_string())?;
@@ -94,24 +94,24 @@ pub async fn editar_categoria(
         }
     }
     sqlx::query(
-        "UPDATE categorias SET nombre = $3::text, limite = $4::numeric, moneda = $5
+        "UPDATE categories SET name = $3::text, budget_limit = $4::numeric, currency = $5
         WHERE id = $1 AND user_id = $2",
     )
-    .bind(categoria_id)
+    .bind(category_id)
     .bind(user_id)
-    .bind(&nombre)
-    .bind(input.limite)
-    .bind(&input.moneda)
+    .bind(&name)
+    .bind(input.budget_limit)
+    .bind(&input.currency)
     .execute(&mut *conn)
     .await
     .map_err(|_| "Error al guardar la categoría".to_string())?;
-    if nombre != previo {
+    if name != previous {
         sqlx::query(
-            "UPDATE movimientos SET categoria_txt = $3 WHERE categoria_id = $1 AND user_id = $2",
+            "UPDATE transactions SET category_label = $3 WHERE category_id = $1 AND user_id = $2",
         )
-        .bind(categoria_id)
+        .bind(category_id)
         .bind(user_id)
-        .bind(&nombre)
+        .bind(&name)
         .execute(&mut *conn)
         .await
         .map_err(|_| "Error al sincronizar asientos".to_string())?;
@@ -121,20 +121,20 @@ pub async fn editar_categoria(
 
 /// Borrar categoría: los asientos quedan con categoria_id NULL y su
 /// snapshot de texto (el FK con SET NULL lo hace).
-pub async fn borrar_categoria(
+pub async fn delete_category(
     conn: &mut sqlx::PgConnection,
     user_id: i32,
-    categoria_id: i32,
+    category_id: i32,
 ) -> sqlx::Result<u64> {
-    let res = sqlx::query("DELETE FROM categorias WHERE id = $1 AND user_id = $2")
-        .bind(categoria_id)
+    let res = sqlx::query("DELETE FROM categories WHERE id = $1 AND user_id = $2")
+        .bind(category_id)
         .bind(user_id)
         .execute(&mut *conn)
         .await?;
     Ok(res.rows_affected())
 }
 
-fn respuesta_err(msg: String) -> HttpResponse {
+fn error_response(msg: String) -> HttpResponse {
     if msg.starts_with("Error al") {
         HttpResponse::InternalServerError().body(msg)
     } else {
@@ -142,59 +142,59 @@ fn respuesta_err(msg: String) -> HttpResponse {
     }
 }
 
-#[post("/api/categorias")]
-pub async fn categoria_crear(
-    body: web::Json<CategoriaIn>,
+#[post("/api/categories")]
+pub async fn category_create(
+    body: web::Json<CategoryInput>,
     session: Session,
     pool: web::Data<PgPool>,
 ) -> impl Responder {
-    let Some(user_id) = usuario_de_sesion(&session) else {
+    let Some(user_id) = session_user_id(&session) else {
         return HttpResponse::Unauthorized().finish();
     };
     let mut conn = match pool.get_ref().acquire().await {
         Ok(c) => c,
         Err(_) => return HttpResponse::InternalServerError().body("Error de conexión"),
     };
-    match crear_categoria(&mut conn, user_id, &body).await {
+    match create_category(&mut conn, user_id, &body).await {
         Ok(id) => HttpResponse::Created().json(serde_json::json!({ "id": id })),
-        Err(msg) => respuesta_err(msg),
+        Err(msg) => error_response(msg),
     }
 }
 
-#[patch("/api/categorias/{id}")]
-pub async fn categoria_patch(
+#[patch("/api/categories/{id}")]
+pub async fn category_update(
     path: web::Path<i32>,
-    body: web::Json<CategoriaIn>,
+    body: web::Json<CategoryInput>,
     session: Session,
     pool: web::Data<PgPool>,
 ) -> impl Responder {
-    let Some(user_id) = usuario_de_sesion(&session) else {
+    let Some(user_id) = session_user_id(&session) else {
         return HttpResponse::Unauthorized().finish();
     };
     let mut conn = match pool.get_ref().acquire().await {
         Ok(c) => c,
         Err(_) => return HttpResponse::InternalServerError().body("Error de conexión"),
     };
-    match editar_categoria(&mut conn, user_id, path.into_inner(), &body).await {
+    match update_category(&mut conn, user_id, path.into_inner(), &body).await {
         Ok(()) => HttpResponse::Ok().body("Categoría guardada"),
-        Err(msg) => respuesta_err(msg),
+        Err(msg) => error_response(msg),
     }
 }
 
-#[delete("/api/categorias/{id}")]
-pub async fn categoria_borrar(
+#[delete("/api/categories/{id}")]
+pub async fn category_delete(
     path: web::Path<i32>,
     session: Session,
     pool: web::Data<PgPool>,
 ) -> impl Responder {
-    let Some(user_id) = usuario_de_sesion(&session) else {
+    let Some(user_id) = session_user_id(&session) else {
         return HttpResponse::Unauthorized().finish();
     };
     let mut conn = match pool.get_ref().acquire().await {
         Ok(c) => c,
         Err(_) => return HttpResponse::InternalServerError().body("Error de conexión"),
     };
-    match borrar_categoria(&mut conn, user_id, path.into_inner()).await {
+    match delete_category(&mut conn, user_id, path.into_inner()).await {
         Ok(0) => HttpResponse::NotFound().finish(),
         Ok(_) => HttpResponse::Ok().body("Categoría borrada"),
         Err(_) => HttpResponse::InternalServerError().body("Error al borrar la categoría"),

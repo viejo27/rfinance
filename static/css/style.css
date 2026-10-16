@@ -138,20 +138,20 @@ h3 {
 	text-wrap: balance;
 }
 
-.muestra {
+.swatch {
 	font-family: var(--display);
 	text-transform: uppercase;
 	letter-spacing: 0.01em;
 }
 
-.titulo-seccion {
+.section-title {
 	font-family: var(--stencil);
 	font-size: 1.5rem;
 	line-height: 1.1;
 	letter-spacing: 0.02em;
 }
 
-.rotulo {
+.mini-label {
 	font-family: var(--mono);
 	font-size: 0.7rem;
 	font-weight: 500;
@@ -159,7 +159,7 @@ h3 {
 	letter-spacing: 0.09em;
 }
 
-.datos {
+.figure {
 	font-variant-numeric: tabular-nums;
 	letter-spacing: 0.01em;
 }
@@ -203,20 +203,20 @@ a:hover {
 	box-shadow: none !important;
 }
 
-.btn-primario {
+.btn-primary {
 	background: var(--rojo);
 	border-color: var(--rojo);
 	color: var(--papel);
 	box-shadow: 4px 4px 0 var(--tinta);
 }
 
-.btn-primario:hover {
+.btn-primary:hover {
 	background: var(--rojo-hondo);
 	border-color: var(--rojo-hondo);
 	color: var(--papel);
 }
 
-.btn-peligro {
+.btn-danger {
 	/* acción destructiva: outline hasta foco deliberado */
 	background: transparent;
 	border: var(--grosor) solid var(--tinta-2);
@@ -224,20 +224,20 @@ a:hover {
 	box-shadow: none;
 }
 
-.btn-peligro:hover,
-.btn-peligro:focus-visible {
+.btn-danger:hover,
+.btn-danger:focus-visible {
 	background: var(--rojo);
 	border-color: var(--rojo);
 	color: var(--papel);
 }
 
-.campo-label {
+.field-label {
 	display: block;
 	margin-bottom: 6px;
 	margin-top: 18px;
 }
 
-.campo {
+.field {
 	width: 100%;
 	padding: 11px 12px;
 	font-family: var(--mono);
@@ -248,7 +248,7 @@ a:hover {
 	border-radius: 0;
 }
 
-select.campo {
+select.field {
 	appearance: none;
 	background-image: linear-gradient(45deg, transparent 50%, var(--tinta) 50%),
 		linear-gradient(135deg, var(--tinta) 50%, transparent 50%);
@@ -258,45 +258,45 @@ select.campo {
 	padding-right: 34px;
 }
 
-input[type='date'].campo {
+input[type='date'].field {
 	min-height: 44px;
 }
 
-.campo::placeholder {
+.field::placeholder {
 	color: var(--tinta-2);
 	opacity: 1;
 }
 
 /* ---------- Avisos ---------- */
 
-.aviso {
+.notice {
 	border: var(--grosor) solid var(--tinta);
 	background: var(--papel-claro);
 	padding: 12px 14px;
 	font-size: 0.9rem;
 }
 
-.aviso-error {
+.notice-danger {
 	border-color: var(--rojo);
 	background: var(--rojo);
 	color: var(--papel);
 }
 
-.aviso-exito {
+.notice-success {
 	border-color: var(--ocre);
 	color: var(--ocre);
 }
 
 /* ---------- Página de sesión (login / register) ---------- */
 
-.auth-centro {
+.auth-center {
 	min-height: 100vh;
 	display: grid;
 	place-items: center;
 	padding: 24px;
 }
 
-.auth-caja {
+.auth-box {
 	position: relative;
 	width: 100%;
 	max-width: 460px;
@@ -308,7 +308,7 @@ input[type='date'].campo {
 }
 
 /* franja diagonal: el corte del cartel */
-.auth-caja::before {
+.auth-box::before {
 	content: '';
 	position: absolute;
 	top: -34px;
@@ -319,7 +319,7 @@ input[type='date'].campo {
 	transform: rotate(-30deg);
 }
 
-.auth-caja::after {
+.auth-box::after {
 	content: '';
 	position: absolute;
 	top: 8px;
@@ -330,7 +330,7 @@ input[type='date'].campo {
 	transform: rotate(-30deg);
 }
 
-.auth-marca {
+.auth-brand {
 	font-family: var(--stencil);
 	font-size: 2.6rem;
 	line-height: 1;
@@ -345,12 +345,12 @@ input[type='date'].campo {
 	color: var(--tinta-2);
 }
 
-.auth-enlace {
+.auth-link {
 	margin-top: 24px;
 	font-size: 0.9rem;
 }
 
-.auth-pie {
+.auth-footer {
 	margin-top: 22px;
 	padding-top: 16px;
 	border-top: var(--grosor) solid var(--tinta);
@@ -358,7 +358,7 @@ input[type='date'].campo {
 
 /* ---------- Página de administración (placeholder, sin contenido nuevo) ---------- */
 
-.panel-admin {
+.admin-panel {
 	max-width: 720px;
 	margin: 64px auto;
 	padding: 32px;

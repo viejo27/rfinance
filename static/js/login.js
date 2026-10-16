@@ -1,13 +1,13 @@
-const aviso = document.getElementById('loginError');
+const notice = document.getElementById('loginError');
 
-function mostrarError(texto) {
-	aviso.textContent = texto;
-	aviso.hidden = false;
+function showError(text) {
+	notice.textContent = text;
+	notice.hidden = false;
 }
 
 document.getElementById('loginForm').addEventListener('submit', async function (e) {
 	e.preventDefault();
-	aviso.hidden = true;
+	notice.hidden = true;
 
 	const email = document.getElementById('email').value;
 	const password = document.getElementById('password').value;
@@ -23,7 +23,7 @@ document.getElementById('loginForm').addEventListener('submit', async function (
 	if (response.ok) {
 		window.location.href = '/';
 	} else {
-		mostrarError('Credenciales incorrectas — revisa el email y la contraseña, o regístrate.');
+		showError('Credenciales incorrectas — revisa el email y la contraseña, o regístrate.');
 		document.getElementById('password').value = '';
 		document.getElementById('email').focus();
 	}

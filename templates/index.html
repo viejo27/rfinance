@@ -7,261 +7,261 @@
 		<link href="/css/style.css" rel="stylesheet">
 		<link href="/css/dashboard.css" rel="stylesheet">
 	</head>
-	<body class="app" data-hoy="{{ hoy_iso }}">
+	<body class="app" data-today="{{ today_iso }}">
 		<header class="shellbar">
 			<div class="shell-inner">
-				<a class="marca" href="/">RFINANCE</a>
+				<a class="brand" href="/">RFINANCE</a>
 				<nav aria-label="Secciones de RFinance">
-					<ul class="nav-secciones">
-						<li><a class="nav-link nav-actual" href="/" aria-current="page">REGISTRO</a></li>
-						<li><a class="nav-link" href="#sec-cuentas">CUENTAS</a></li>
-						<li><a class="nav-link" href="#sec-presu">PRESUPUESTOS</a></li>
+					<ul class="section-nav">
+						<li><a class="nav-link is-current" href="/" aria-current="page">REGISTRO</a></li>
+						<li><a class="nav-link" href="#sec-accounts">CUENTAS</a></li>
+						<li><a class="nav-link" href="#sec-budget">PRESUPUESTOS</a></li>
 						<li><span class="nav-link" aria-disabled="true">INFORMES *</span></li>
 						<li><span class="nav-link" aria-disabled="true">DEUDAS *</span></li>
 						<li><span class="nav-link" aria-disabled="true">OBJETIVOS *</span></li>
 						<li><span class="nav-link" aria-disabled="true">INVERSIONES *</span></li>
 					</ul>
 				</nav>
-				<div class="usu-shell">
-					<span class="usu-mail datos">{{ email }}</span>
-					<button id="logoutBtn" class="btn btn-salir" type="button">SALIR</button>
+				<div class="user-shell">
+					<span class="user-email figure">{{ email }}</span>
+					<button id="logoutBtn" class="btn btn-exit" type="button">SALIR</button>
 				</div>
 			</div>
 		</header>
 
-		<main class="marco">
-			<div class="franja-margen rotulo">
-				<span>CORTE: <b>{{ corte }}</b></span>
+		<main class="frame">
+			<div class="margin-band mini-label">
+				<span>CORTE: <b>{{ cutoff }}</b></span>
 				<span>MONEDAS: <b>ARS · USD</b> · SIN CONVERSIÓN</span>
 				<span>REGISTRO: <b>PERSISTIDO</b></span>
 			</div>
 
-			<section id="sec-mando" aria-labelledby="t-mando">
-				<h2 id="t-mando" class="banda"><span class="titulo-seccion">Banda de mando</span></h2>
+			<section id="sec-overview" aria-labelledby="t-overview">
+				<h2 id="t-overview" class="section-band"><span class="section-title">Banda de mando</span></h2>
 
-				<div class="mando">
-					<div class="mando-total">
-						<span class="rotulo">TOTAL · ARS</span>
+				<div class="overview">
+					<div class="overview-total">
+						<span class="mini-label">TOTAL · ARS</span>
 						<span class="total-num" id="totalArs">0</span>
 						<span class="total-sub" id="subArs"></span>
 					</div>
-					<div class="mando-total">
-						<span class="rotulo">TOTAL · USD</span>
+					<div class="overview-total">
+						<span class="mini-label">TOTAL · USD</span>
 						<span class="total-num" id="totalUsd">0,00</span>
 						<span class="total-sub" id="subUsd"></span>
 					</div>
 
-					<div class="mando-histo">
-						<span class="rotulo"><span id="histoAno">AÑO</span> · ARS <b class="datos" id="netoAnual"></b></span>
-						<div id="mandoHisto"></div>
+					<div class="overview-history">
+						<span class="mini-label"><span id="historyYear">AÑO</span> · ARS <b class="figure" id="netYearly"></b></span>
+						<div id="overviewHistory"></div>
 					</div>
 
-					<form class="captura" id="capturaForm" aria-label="Carga rápida de asiento">
-						<span class="captura-titulo rotulo" id="capturaTitulo">ANOTAR EN EL LIBRO</span>
-						<div class="cap-fecha">
-							<label class="campo-label rotulo" for="capFecha">FECHA</label>
-							<input class="campo" type="date" id="capFecha" name="fecha" value="{{ hoy_iso }}" required>
+					<form class="entry-form" id="entryForm" aria-label="Carga rápida de asiento">
+						<span class="entry-title mini-label" id="entryTitle">ANOTAR EN EL LIBRO</span>
+						<div class="entry-date">
+							<label class="field-label mini-label" for="entryDate">FECHA</label>
+							<input class="field" type="date" id="entryDate" name="entryDate" value="{{ today_iso }}" required>
 						</div>
-						<div class="cap-monto">
-							<label class="campo-label rotulo" for="capMonto">MONTO</label>
-							<input class="campo" type="number" id="capMonto" name="monto" min="0.01" step="0.01" inputmode="decimal" placeholder="0,00" required>
+						<div class="entry-amount">
+							<label class="field-label mini-label" for="entryAmount">MONTO</label>
+							<input class="field" type="number" id="entryAmount" name="amount" min="0.01" step="0.01" inputmode="decimal" placeholder="0,00" required>
 						</div>
-						<div class="cap-moneda">
-							<label class="campo-label rotulo" for="capMoneda">MONEDA</label>
-							<select class="campo" id="capMoneda" name="moneda">
+						<div class="entry-currency">
+							<label class="field-label mini-label" for="entryCurrency">MONEDA</label>
+							<select class="field" id="entryCurrency" name="currency">
 								<option value="ARS" selected>ARS</option>
 								<option value="USD">USD</option>
 							</select>
 						</div>
-						<div class="cap-tipo">
-							<span class="campo-label rotulo">TIPO</span>
-							<div class="tipo-pares">
-								<label class="tipo-opcion">
-									<input type="radio" name="capTipo" value="ingreso">
+						<div class="entry-type">
+							<span class="field-label mini-label">TIPO</span>
+							<div class="type-options">
+								<label class="type-option">
+									<input type="radio" name="entryType" value="income">
 									<span>INGRESO</span>
 								</label>
-								<label class="tipo-opcion">
-									<input type="radio" name="capTipo" value="egreso" checked>
+								<label class="type-option">
+									<input type="radio" name="entryType" value="expense" checked>
 									<span>EGRESO</span>
 								</label>
 							</div>
 						</div>
-						<div class="cap-cuenta">
-							<label class="campo-label rotulo" for="capCuenta">CUENTA</label>
-							<select class="campo" id="capCuenta" name="cuenta"></select>
+						<div class="entry-account">
+							<label class="field-label mini-label" for="entryAccount">CUENTA</label>
+							<select class="field" id="entryAccount" name="account"></select>
 						</div>
-						<div class="cap-cat">
-							<label class="campo-label rotulo" for="capCategoria">CATEGORÍA</label>
-							<select class="campo" id="capCategoria" name="categoria"></select>
+						<div class="entry-category">
+							<label class="field-label mini-label" for="entryCategory">CATEGORÍA</label>
+							<select class="field" id="entryCategory" name="category"></select>
 						</div>
-						<div class="cap-rec">
-							<span class="campo-label rotulo">RECURRENTE</span>
-							<label class="rec-par">
-								<input type="checkbox" id="capRec" name="rec">
-								<span class="rotulo">REPITE CADA MES</span>
+						<div class="entry-recurring">
+							<span class="field-label mini-label">RECURRENTE</span>
+							<label class="recurring-toggle">
+								<input type="checkbox" id="entryRecurring" name="recurring">
+								<span class="mini-label">REPITE CADA MES</span>
 							</label>
 						</div>
-						<div class="cap-rec-fila">
-							<div class="cap-cuotas">
-								<label class="campo-label rotulo" for="capCuotas">CUOTAS <small>(VACÍO = SIN LÍMITE)</small></label>
-								<input class="campo" type="number" id="capCuotas" name="cuotas" min="1" max="600" placeholder="∞">
+						<div class="entry-recurring-row">
+							<div class="entry-installments">
+								<label class="field-label mini-label" for="entryInstallments">CUOTAS <small>(VACÍO = SIN LÍMITE)</small></label>
+								<input class="field" type="number" id="entryInstallments" name="installments" min="1" max="600" placeholder="∞">
 							</div>
 						</div>
-						<div class="cap-alcance" id="capAlcance">
-							<span class="campo-label rotulo">ALCANCE DE LA EDICIÓN</span>
-							<div class="tipo-pares">
-								<label class="tipo-opcion">
-									<input type="radio" name="capAlcance" value="unica" checked>
+						<div class="entry-scope" id="entryScope">
+							<span class="field-label mini-label">ALCANCE DE LA EDICIÓN</span>
+							<div class="type-options">
+								<label class="type-option">
+									<input type="radio" name="entryScope" value="single" checked>
 									<span>SOLO ESTE ASIENTO</span>
 								</label>
-								<label class="tipo-opcion">
-									<input type="radio" name="capAlcance" value="siguientes">
+								<label class="type-option">
+									<input type="radio" name="entryScope" value="following">
 									<span>ESTE Y LOS SIGUIENTES</span>
 								</label>
 							</div>
 						</div>
-						<div class="cap-concepto">
-							<label class="campo-label rotulo" for="capConcepto">CONCEPTO</label>
-							<input class="campo" type="text" id="capConcepto" name="concepto" maxlength="200" placeholder="¿Qué movimiento?" required>
+						<div class="entry-description">
+							<label class="field-label mini-label" for="entryDescription">CONCEPTO</label>
+							<input class="field" type="text" id="entryDescription" name="description" maxlength="200" placeholder="¿Qué movimiento?" required>
 						</div>
-						<button class="btn btn-primario" id="capturaBtn" type="submit">REGISTRAR</button>
-						<button class="btn" id="capturaCancelar" type="button" hidden>CANCELAR</button>
-						<p class="aviso captura-aviso" id="capturaEstado" role="status" hidden></p>
+						<button class="btn btn-primary" id="entrySubmit" type="submit">REGISTRAR</button>
+						<button class="btn" id="entryCancel" type="button" hidden>CANCELAR</button>
+						<p class="notice entry-notice" id="entryStatus" role="status" hidden></p>
 					</form>
 				</div>
 			</section>
 
-			<section id="sec-cuentas" aria-labelledby="t-cuentas">
-				<h2 id="t-cuentas" class="banda"><span class="titulo-seccion">Cuentas y billeteras</span></h2>
+			<section id="sec-accounts" aria-labelledby="t-accounts">
+				<h2 id="t-accounts" class="section-band"><span class="section-title">Cuentas y billeteras</span></h2>
 
-				<div class="cuentas" id="cuentasGrilla"></div>
+				<div class="accounts" id="accountsGrid"></div>
 
-				<div class="estado-vacio" id="estadoCuentas" hidden>
-					<span class="rotulo">SIN CUENTAS · AGREGA LA PRIMERA</span>
-					<button class="btn btn-mini" id="estadoCuentasBtn" type="button">AGREGAR CUENTA</button>
+				<div class="empty-state" id="accountsEmpty" hidden>
+					<span class="mini-label">SIN CUENTAS · AGREGA LA PRIMERA</span>
+					<button class="btn btn-mini" id="accountsEmptyBtn" type="button">AGREGAR CUENTA</button>
 				</div>
 
-				<form class="alta-caja" id="altaCuentaForm" aria-label="Agregar cuenta">
-					<span class="rotulo" id="altaTitulo">AGREGAR CUENTA</span>
-					<div class="alta-linea">
-						<div class="alta-campo">
-							<label class="campo-label rotulo" for="altaNombre">NOMBRE</label>
-							<input class="campo" type="text" id="altaNombre" maxlength="100" placeholder="Billetera X" required>
+				<form class="form-box" id="accountForm" aria-label="Agregar cuenta">
+					<span class="mini-label" id="accountFormTitle">AGREGAR CUENTA</span>
+					<div class="form-row">
+						<div class="form-field">
+							<label class="field-label mini-label" for="accountFormName">NOMBRE</label>
+							<input class="field" type="text" id="accountFormName" maxlength="100" placeholder="Billetera X" required>
 						</div>
-						<div class="alta-campo alta-campo-moneda">
-							<label class="campo-label rotulo" for="altaMoneda">MONEDA</label>
-							<select class="campo" id="altaMoneda">
+						<div class="form-field form-field-currency">
+							<label class="field-label mini-label" for="accountFormCurrency">MONEDA</label>
+							<select class="field" id="accountFormCurrency">
 								<option value="ARS" selected>ARS</option>
 								<option value="USD">USD</option>
 							</select>
 						</div>
-						<div class="alta-campo">
-							<label class="campo-label rotulo" for="altaSaldo">SALDO INICIAL</label>
-							<input class="campo" type="number" id="altaSaldo" step="0.01" placeholder="0,00">
+						<div class="form-field">
+							<label class="field-label mini-label" for="accountFormBalance">SALDO INICIAL</label>
+							<input class="field" type="number" id="accountFormBalance" step="0.01" placeholder="0,00">
 						</div>
-						<div class="alta-acciones">
-							<button class="btn btn-primario" id="altaCuentaBtn" type="submit">AGREGAR</button>
-							<button class="btn" id="altaCuentaCancelar" type="button" hidden>CANCELAR</button>
+						<div class="form-actions">
+							<button class="btn btn-primary" id="accountFormSubmit" type="submit">AGREGAR</button>
+							<button class="btn" id="accountFormCancel" type="button" hidden>CANCELAR</button>
 						</div>
 					</div>
 				</form>
 			</section>
 
-			<section id="sec-libro" aria-labelledby="t-libro">
-				<h2 id="t-libro" class="banda"><span class="titulo-seccion">Libro contable</span></h2>
+			<section id="sec-ledger" aria-labelledby="t-ledger">
+				<h2 id="t-ledger" class="section-band"><span class="section-title">Libro contable</span></h2>
 
-				<div class="mes-nav">
-					<button class="mes-flecha prev" id="mesPrev" type="button" aria-label="Mes anterior"></button>
-					<span class="rotulo datos" id="mesVisto"></span>
-					<button class="mes-flecha next" id="mesNext" type="button" aria-label="Mes siguiente"></button>
-					<button class="btn btn-mini" id="mesHoy" type="button" hidden>VOLVER A HOY</button>
+				<div class="month-nav">
+					<button class="month-arrow prev" id="monthPrev" type="button" aria-label="Mes anterior"></button>
+					<span class="mini-label figure" id="monthViewed"></span>
+					<button class="month-arrow next" id="monthNext" type="button" aria-label="Mes siguiente"></button>
+					<button class="btn btn-mini" id="monthToday" type="button" hidden>VOLVER A HOY</button>
 				</div>
 
-				<div class="libro-filtros" role="search">
-					<label class="rotulo" for="fMoneda" hidden>Moneda</label>
-					<select class="campo" id="fMoneda">
+				<div class="ledger-filters" role="search">
+					<label class="mini-label" for="filterCurrency" hidden>Moneda</label>
+					<select class="field" id="filterCurrency">
 						<option value="">TODAS MONEDAS</option>
 						<option value="ARS">ARS</option>
 						<option value="USD">USD</option>
 					</select>
-					<label class="rotulo" for="fCategoria" hidden>Categoría</label>
-					<select class="campo" id="fCategoria">
+					<label class="mini-label" for="filterCategory" hidden>Categoría</label>
+					<select class="field" id="filterCategory">
 						<option value="">TODAS CATEGORÍAS</option>
 					</select>
-					<label class="rotulo" for="fConcepto" hidden>Concepto</label>
-					<input class="campo campo-ancha" type="search" id="fConcepto" placeholder="BUSCAR CONCEPTO…">
-					<button class="btn" id="fLimpiar" type="button">LIMPIAR</button>
-					<span class="libro-conteo rotulo" id="libroConteo" aria-live="polite"></span>
+					<label class="mini-label" for="filterConcept" hidden>Concepto</label>
+					<input class="field field-wide" type="search" id="filterConcept" placeholder="BUSCAR CONCEPTO…">
+					<button class="btn" id="filterClear" type="button">LIMPIAR</button>
+					<span class="ledger-count mini-label" id="ledgerCount" aria-live="polite"></span>
 				</div>
 
-				<div class="tabla-envoltura">
-					<table class="libro" id="libroTabla">
+				<div class="table-wrap">
+					<table class="ledger" id="ledgerTable">
 						<thead>
 							<tr>
-								<th scope="col" data-ordena="fecha" aria-sort="descending"><button type="button">FECHA</button></th>
-								<th scope="col" data-ordena="categoria" aria-sort="none"><button type="button">CATEGORÍA</button></th>
-								<th scope="col" data-ordena="cuenta" aria-sort="none"><button type="button">CUENTA</button></th>
+								<th scope="col" data-sort-by="entry_date" aria-sort="descending"><button type="button">FECHA</button></th>
+								<th scope="col" data-sort-by="category" aria-sort="none"><button type="button">CATEGORÍA</button></th>
+								<th scope="col" data-sort-by="account" aria-sort="none"><button type="button">CUENTA</button></th>
 								<th scope="col">CONCEPTO</th>
-								<th scope="col" data-ordena="valor" aria-sort="none"><button type="button">MONTO</button></th>
+								<th scope="col" data-sort-by="value" aria-sort="none"><button type="button">MONTO</button></th>
 								<th scope="col">ACCIONES</th>
 							</tr>
 						</thead>
-						<tbody id="libroCuerpo"></tbody>
+						<tbody id="ledgerBody"></tbody>
 					</table>
-					<div class="libro-vacio" id="libroVacio">
-						<span class="rotulo" id="libroVacioTexto">EL LIBRO ESTÁ VACÍO · ANOTA TU PRIMER ASIENTO ARRIBA</span>
+					<div class="ledger-empty" id="ledgerEmpty">
+						<span class="mini-label" id="ledgerEmptyText">EL LIBRO ESTÁ VACÍO · ANOTA TU PRIMER ASIENTO ARRIBA</span>
 					</div>
 				</div>
 			</section>
 
-			<section id="sec-presu" aria-labelledby="t-presu">
-				<h2 id="t-presu" class="banda">
-					<span class="titulo-seccion">Presupuestos del mes</span>
-					<span class="etiqueta-mes rotulo" id="presuMes" hidden></span>
+			<section id="sec-budget" aria-labelledby="t-budget">
+				<h2 id="t-budget" class="section-band">
+					<span class="section-title">Presupuestos del mes</span>
+					<span class="month-label mini-label" id="budgetMonth" hidden></span>
 				</h2>
 
-				<ul class="presu" id="presuLista"></ul>
+				<ul class="budget" id="budgetList"></ul>
 
-				<div class="estado-vacio" id="estadoPresu" hidden>
-					<span class="rotulo">SIN CATEGORÍAS · CREA LA PRIMERA</span>
-					<button class="btn btn-mini" id="estadoPresuBtn" type="button">AGREGAR CATEGORÍA</button>
+				<div class="empty-state" id="budgetEmpty" hidden>
+					<span class="mini-label">SIN CATEGORÍAS · CREA LA PRIMERA</span>
+					<button class="btn btn-mini" id="budgetEmptyBtn" type="button">AGREGAR CATEGORÍA</button>
 				</div>
 
-				<form class="alta-caja" id="altaCatForm" aria-label="Agregar categoría">
-					<span class="rotulo" id="altaCatTitulo">AGREGAR CATEGORÍA</span>
-					<div class="alta-linea">
-						<div class="alta-campo">
-							<label class="campo-label rotulo" for="altaCatNombre">NOMBRE</label>
-							<input class="campo" type="text" id="altaCatNombre" maxlength="60" placeholder="Mascota" required>
+				<form class="form-box" id="categoryForm" aria-label="Agregar categoría">
+					<span class="mini-label" id="categoryFormTitle">AGREGAR CATEGORÍA</span>
+					<div class="form-row">
+						<div class="form-field">
+							<label class="field-label mini-label" for="categoryFormName">NOMBRE</label>
+							<input class="field" type="text" id="categoryFormName" maxlength="60" placeholder="Mascota" required>
 						</div>
-						<div class="alta-campo">
-							<label class="campo-label rotulo" for="altaCatLimite">LÍMITE MENSUAL <small>(OPCIONAL)</small></label>
-							<input class="campo" type="number" id="altaCatLimite" step="0.01" min="0" placeholder="SIN LÍMITE">
+						<div class="form-field">
+							<label class="field-label mini-label" for="categoryFormLimit">LÍMITE MENSUAL <small>(OPCIONAL)</small></label>
+							<input class="field" type="number" id="categoryFormLimit" step="0.01" min="0" placeholder="SIN LÍMITE">
 						</div>
-						<div class="alta-campo alta-campo-moneda">
-							<label class="campo-label rotulo" for="altaCatMoneda">MONEDA</label>
-							<select class="campo" id="altaCatMoneda">
+						<div class="form-field form-field-currency">
+							<label class="field-label mini-label" for="categoryFormCurrency">MONEDA</label>
+							<select class="field" id="categoryFormCurrency">
 								<option value="ARS" selected>ARS</option>
 								<option value="USD">USD</option>
 							</select>
 						</div>
-						<div class="alta-acciones">
-							<button class="btn btn-primario" id="altaCatBtn" type="submit">AGREGAR</button>
-							<button class="btn" id="altaCatCancelar" type="button" hidden>CANCELAR</button>
+						<div class="form-actions">
+							<button class="btn btn-primary" id="categoryFormSubmit" type="submit">AGREGAR</button>
+							<button class="btn" id="categoryFormCancel" type="button" hidden>CANCELAR</button>
 						</div>
 					</div>
 				</form>
 			</section>
 
-			<section id="sec-carteles" aria-labelledby="t-carteles">
-				<h2 id="t-carteles" class="banda"><span class="titulo-seccion">Carteles del año</span></h2>
-				<div class="carteles" id="cartelesGrilla"></div>
+			<section id="sec-cards" aria-labelledby="t-cards">
+				<h2 id="t-cards" class="section-band"><span class="section-title">Carteles del año</span></h2>
+				<div class="cards" id="cardsGrid"></div>
 			</section>
 
-			<footer class="pie rotulo">
+			<footer class="footer mini-label">
 				<span>* SECCIÓN <b>EN CONSTRUCCIÓN</b> · INFORMES, DEUDAS, OBJETIVOS, INVERSIONES</span>
 				<span>LOS SALDOS SE LEEN <b>PERSISTIDOS</b></span>
-				<span class="marca">RFINANCE</span>
+				<span class="brand">RFINANCE</span>
 			</footer>
 		</main>
 

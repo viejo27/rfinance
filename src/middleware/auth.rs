@@ -8,7 +8,7 @@ use actix_web::{
 
 /// Paths que corren sin sesión: página de login, los tres endpoints
 /// públicos de la API y los assets estáticos.
-fn es_publico(path: &str) -> bool {
+fn is_public_path(path: &str) -> bool {
     path == "/login"
         || path == "/api/login"
         || path == "/api/register"
@@ -25,21 +25,21 @@ pub async fn check_session(
 ) -> Result<ServiceResponse<BoxBody>, Error> {
     let path = req.path().to_string();
 
-    if es_publico(&path) {
+    if is_public_path(&path) {
         return next
             .call(req)
             .await
             .map(ServiceResponse::map_into_boxed_body);
     }
 
-    let con_sesion = req
+    let has_session = req
         .get_session()
         .get::<String>("user_email")
         .unwrap_or(None)
         .is_some();
 
     if path == "/register" {
-        if con_sesion {
+        if has_session {
             let (request, _) = req.into_parts();
             let response = HttpResponse::Found()
                 .append_header(("Location", "/"))
@@ -54,13 +54,13 @@ pub async fn check_session(
 
     // La API financiera responde 401 en vez de redirigir: los fetch del
     // frontend distinguen "sin sesión" del HTML de login.
-    if path.starts_with("/api/") && !con_sesion {
+    if path.starts_with("/api/") && !has_session {
         let (request, _) = req.into_parts();
         let response = HttpResponse::Unauthorized().body("Sesión expirada — ingresa de nuevo");
         return Ok(ServiceResponse::new(request, response));
     }
 
-    if !con_sesion {
+    if !has_session {
         let (request, _) = req.into_parts();
         let response = HttpResponse::Found()
             .append_header(("Location", "/login"))

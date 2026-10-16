@@ -1,14 +1,14 @@
-const aviso = document.getElementById('registerMsg');
+const notice = document.getElementById('registerMsg');
 
-function mostrar(texto, esError) {
-	aviso.textContent = texto;
-	aviso.classList.toggle('aviso-error', esError);
-	aviso.hidden = false;
+function show(text, isError) {
+	notice.textContent = text;
+	notice.classList.toggle('notice-danger', isError);
+	notice.hidden = false;
 }
 
 document.getElementById('registerForm').addEventListener('submit', async function (e) {
 	e.preventDefault();
-	aviso.hidden = true;
+	notice.hidden = true;
 
 	const email = document.getElementById('email').value.trim();
 	const password = document.getElementById('password').value.trim();
@@ -16,7 +16,7 @@ document.getElementById('registerForm').addEventListener('submit', async functio
 	const last_name = document.getElementById('last_name').value.trim();
 
 	if (!email || !password || !name || !last_name) {
-		mostrar('Todos los campos son obligatorios — complétalos para continuar.', true);
+		show('Todos los campos son obligatorios — complétalos para continuar.', true);
 		return;
 	}
 
@@ -30,15 +30,15 @@ document.getElementById('registerForm').addEventListener('submit', async functio
 		});
 
 		if (response.ok) {
-			mostrar('Registro exitoso — puedes iniciar sesión.', false);
+			show('Registro exitoso — puedes iniciar sesión.', false);
 			setTimeout(function () {
 				window.location.href = '/login';
 			}, 900);
 		} else {
 			const errorText = await response.text();
-			mostrar('No se pudo registrar: ' + errorText, true);
+			show('No se pudo registrar: ' + errorText, true);
 		}
 	} catch (error) {
-		mostrar('Error de conexión con el servidor — inténtalo de nuevo.', true);
+		show('Error de conexión con el servidor — inténtalo de nuevo.', true);
 	}
 });

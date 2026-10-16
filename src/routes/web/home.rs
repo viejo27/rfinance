@@ -3,15 +3,15 @@ use actix_web::{HttpResponse, Responder, get, web};
 use askama::Template;
 use sqlx::PgPool;
 
-use crate::fecha;
-use crate::routes::api::recurrencias::materializar;
+use crate::date;
+use crate::routes::api::recurrences::materialize;
 
 #[derive(Template)]
 #[template(path = "index.html")]
 struct IndexTemplate<'a> {
     email: &'a str,
-    corte: String,
-    hoy_iso: String,
+    cutoff: String,
+    today_iso: String,
 }
 
 #[get("/")]
@@ -29,16 +29,16 @@ async fn index(session: Session, pool: web::Data<PgPool>) -> impl Responder {
     if let Some(user_id) = session.get::<i32>("user_id").unwrap_or(None)
         && let Ok(mut conn) = pool.get_ref().acquire().await
     {
-        let _ = materializar(&mut conn, user_id, &fecha::hoy_iso()).await;
+        let _ = materialize(&mut conn, user_id, &date::today_iso()).await;
     }
-    let (hoy_iso, corte) = fecha::hoy();
-    let plantilla = IndexTemplate {
+    let (today_iso, cutoff) = date::today();
+    let template = IndexTemplate {
         email: &email,
-        corte,
-        hoy_iso,
+        cutoff,
+        today_iso,
     };
 
-    match plantilla.render() {
+    match template.render() {
         Ok(html) => HttpResponse::Ok()
             .content_type("text/html; charset=utf-8")
             .body(html),

@@ -1,4 +1,4 @@
-mod fecha;
+mod date;
 mod middleware;
 mod role;
 mod routes;
@@ -8,9 +8,9 @@ use actix_web::{App, HttpServer, cookie::Key, web};
 use actix_web_grants::GrantsMiddleware;
 use dotenvy::dotenv;
 use routes::api::{
-    api_estado, api_login, api_logout, api_rec_borrar, api_register, categoria_borrar,
-    categoria_crear, categoria_patch, cuenta_borrar, cuenta_crear, cuenta_patch, movimiento_borrar,
-    movimiento_crear, movimiento_patch,
+    account_create, account_delete, account_update, api_login, api_logout, api_recurrence_delete,
+    api_register, api_snapshot, category_create, category_delete, category_update,
+    transaction_create, transaction_delete, transaction_update,
 };
 use routes::web::{admin_handler, index_handler, login_handler, register_handler};
 use sqlx::PgPool;
@@ -60,20 +60,20 @@ async fn main() -> std::io::Result<()> {
             .service(index_handler)
             .service(login_handler)
             .service(register_handler)
-            .service(api_estado)
+            .service(api_snapshot)
             .service(api_login)
             .service(api_register)
             .service(api_logout)
-            .service(cuenta_crear)
-            .service(cuenta_patch)
-            .service(cuenta_borrar)
-            .service(categoria_crear)
-            .service(categoria_patch)
-            .service(categoria_borrar)
-            .service(movimiento_crear)
-            .service(movimiento_patch)
-            .service(movimiento_borrar)
-            .service(api_rec_borrar)
+            .service(account_create)
+            .service(account_update)
+            .service(account_delete)
+            .service(category_create)
+            .service(category_update)
+            .service(category_delete)
+            .service(transaction_create)
+            .service(transaction_update)
+            .service(transaction_delete)
+            .service(api_recurrence_delete)
             .service(actix_files::Files::new("/css", "static/css").show_files_listing())
             .service(actix_files::Files::new("/js", "static/js").show_files_listing())
             .service(actix_files::Files::new("/fonts", "static/fonts"))
