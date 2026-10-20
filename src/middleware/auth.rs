@@ -17,6 +17,8 @@ fn is_public_path(path: &str) -> bool {
         || path.starts_with("/js")
         || path.starts_with("/fonts")
         || path.starts_with("/textures")
+        || path == "/favicon.ico"
+        || path == "/favicon-512.png"
 }
 
 pub async fn check_session(

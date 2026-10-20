@@ -4,7 +4,7 @@ mod role;
 mod routes;
 
 use actix_session::{SessionMiddleware, config::PersistentSession, storage::CookieSessionStore};
-use actix_web::{App, HttpServer, cookie::Key, web};
+use actix_web::{App, HttpServer, cookie::Key, get, web};
 use actix_web_grants::GrantsMiddleware;
 use dotenvy::dotenv;
 use routes::api::{
@@ -78,10 +78,24 @@ async fn main() -> std::io::Result<()> {
             .service(actix_files::Files::new("/js", "static/js").show_files_listing())
             .service(actix_files::Files::new("/fonts", "static/fonts"))
             .service(actix_files::Files::new("/textures", "static/textures"))
+            .service(favicon_ico)
+            .service(favicon_png)
     })
     .bind(("127.0.0.1", 8080))?
     .run()
     .await
+}
+
+/// Favicon: archivo único servido con su content-type (`image/x-icon`).
+#[get("/favicon.ico")]
+async fn favicon_ico() -> actix_web::Result<actix_files::NamedFile> {
+    Ok(actix_files::NamedFile::open_async("static/favicon.ico").await?)
+}
+
+/// Master del favicon (512 px, con la proveniencia embebida).
+#[get("/favicon-512.png")]
+async fn favicon_png() -> actix_web::Result<actix_files::NamedFile> {
+    Ok(actix_files::NamedFile::open_async("static/favicon-512.png").await?)
 }
 
 /// Make sure the admin account from `.env` exists and owns the `admin` role.
