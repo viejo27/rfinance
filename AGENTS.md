@@ -9,6 +9,18 @@ Guidelines for AI agents working on this codebase.
 - **Templating**: askama 0.15.4
 - **Edition**: Rust 2024
 
+## Git Workflow
+
+- **Never stage or commit without explicit approval.** Before any `git add`,
+  `git commit`, `git push`, `git merge`, `git rebase` or `git reset`, list the
+  files and the proposed commit message and wait for the user's confirmation.
+- **Only commit on a branch you created for the current task.** If the working
+  branch already existed (created or renamed by the user, or by a previous
+  task), leave the changes uncommitted and ask first. Never add a commit to a
+  branch you did not create.
+- Never amend, force-push or rewrite history without explicit approval.
+- Finished work stays in the working tree unless the user asks for a commit.
+
 ## Prerequisites
 
 - Rust 1.94 or newer (MSRV of sqlx 0.9)
