@@ -2,6 +2,7 @@ use actix_session::Session;
 use actix_web::{HttpResponse, Responder, delete, patch, post, web};
 use serde::Deserialize;
 use sqlx::PgPool;
+use uuid::Uuid;
 
 use crate::routes::api::snapshot::session_user_id;
 
@@ -22,7 +23,7 @@ pub async fn create_category(
     conn: &mut sqlx::PgConnection,
     user_id: i32,
     input: &CategoryInput,
-) -> Result<i32, String> {
+) -> Result<Uuid, String> {
     let name = input.name.trim().to_string();
     if name.is_empty() {
         return Err("El nombre de la categoría es obligatorio".into());
@@ -40,9 +41,9 @@ pub async fn create_category(
     if duplicate.is_some() {
         return Err("Esa categoría ya existe".into());
     }
-    let row: (i32,) = sqlx::query_as(
+    let row: (Uuid,) = sqlx::query_as(
         "INSERT INTO categories (user_id, name, budget_limit, currency)
-        VALUES ($1, $2, $3::numeric, $4) RETURNING id",
+        VALUES ($1, $2, $3::numeric, $4) RETURNING public_id",
     )
     .bind(user_id)
     .bind(&name)
@@ -59,7 +60,7 @@ pub async fn create_category(
 pub async fn update_category(
     conn: &mut sqlx::PgConnection,
     user_id: i32,
-    category_id: i32,
+    public_id: Uuid,
     input: &CategoryInput,
 ) -> Result<(), String> {
     let name = input.name.trim().to_string();
@@ -69,17 +70,16 @@ pub async fn update_category(
     if !is_valid_currency(&input.currency) {
         return Err("La moneda debe ser ARS o USD".into());
     }
-    let previous: Option<(String,)> =
-        sqlx::query_as("SELECT name FROM categories WHERE id = $1 AND user_id = $2")
-            .bind(category_id)
+    let previous: Option<(i32, String)> =
+        sqlx::query_as("SELECT id, name FROM categories WHERE public_id = $1 AND user_id = $2")
+            .bind(public_id)
             .bind(user_id)
             .fetch_optional(&mut *conn)
             .await
             .map_err(|_| "Error al buscar la categoría".to_string())?;
-    let previous = previous
-        .map(|(n,)| n)
-        .ok_or_else(|| "Categoría no encontrada".to_string())?;
-    if name != previous {
+    let (category_id, previous_name) =
+        previous.ok_or_else(|| "Categoría no encontrada".to_string())?;
+    if name != previous_name {
         let dup: Option<(i32,)> = sqlx::query_as(
             "SELECT id FROM categories WHERE user_id = $1 AND name = $2 AND id <> $3",
         )
@@ -105,7 +105,7 @@ pub async fn update_category(
     .execute(&mut *conn)
     .await
     .map_err(|_| "Error al guardar la categoría".to_string())?;
-    if name != previous {
+    if name != previous_name {
         sqlx::query(
             "UPDATE transactions SET category_label = $3 WHERE category_id = $1 AND user_id = $2",
         )
@@ -119,15 +119,15 @@ pub async fn update_category(
     Ok(())
 }
 
-/// Borrar categoría: los asientos quedan con categoria_id NULL y su
+/// Borrar categoría: los asientos quedan con category_id NULL y su
 /// snapshot de texto (el FK con SET NULL lo hace).
 pub async fn delete_category(
     conn: &mut sqlx::PgConnection,
     user_id: i32,
-    category_id: i32,
+    public_id: Uuid,
 ) -> sqlx::Result<u64> {
-    let res = sqlx::query("DELETE FROM categories WHERE id = $1 AND user_id = $2")
-        .bind(category_id)
+    let res = sqlx::query("DELETE FROM categories WHERE public_id = $1 AND user_id = $2")
+        .bind(public_id)
         .bind(user_id)
         .execute(&mut *conn)
         .await?;
@@ -163,7 +163,7 @@ pub async fn category_create(
 
 #[patch("/api/categories/{id}")]
 pub async fn category_update(
-    path: web::Path<i32>,
+    path: web::Path<Uuid>,
     body: web::Json<CategoryInput>,
     session: Session,
     pool: web::Data<PgPool>,
@@ -183,7 +183,7 @@ pub async fn category_update(
 
 #[delete("/api/categories/{id}")]
 pub async fn category_delete(
-    path: web::Path<i32>,
+    path: web::Path<Uuid>,
     session: Session,
     pool: web::Data<PgPool>,
 ) -> impl Responder {

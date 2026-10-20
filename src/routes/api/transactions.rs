@@ -2,6 +2,7 @@ use actix_session::Session;
 use actix_web::{HttpResponse, Responder, delete, patch, post, web};
 use serde::Deserialize;
 use sqlx::PgPool;
+use uuid::Uuid;
 
 use crate::routes::api::recurrences::materialize;
 use crate::routes::api::snapshot::session_user_id;
@@ -25,8 +26,8 @@ pub enum Scope {
 #[derive(Deserialize)]
 pub struct TransactionInput {
     pub entry_date: String,
-    pub account_id: i32,
-    pub category_id: Option<i32>,
+    pub account_id: Uuid,
+    pub category_id: Option<Uuid>,
     pub description: String,
     pub amount: f64,
     pub is_income: bool,
@@ -85,6 +86,43 @@ fn validate_common(input: &TransactionInput) -> Result<(), String> {
     Ok(())
 }
 
+/// Resuelve el public_id (UUID4) de una cuenta al id serial interno.
+async fn resolve_account(
+    conn: &mut sqlx::PgConnection,
+    user_id: i32,
+    public_id: Uuid,
+) -> Result<i32, String> {
+    let row: Option<(i32,)> =
+        sqlx::query_as("SELECT id FROM accounts WHERE public_id = $1 AND user_id = $2")
+            .bind(public_id)
+            .bind(user_id)
+            .fetch_optional(&mut *conn)
+            .await
+            .map_err(|_| "Error al buscar la cuenta".to_string())?;
+    row.map(|(id,)| id)
+        .ok_or_else(|| "Cuenta no encontrada".to_string())
+}
+
+/// Resuelve el public_id de una categoría (opcional) al id serial interno.
+async fn resolve_category(
+    conn: &mut sqlx::PgConnection,
+    user_id: i32,
+    public_id: Option<Uuid>,
+) -> Result<Option<i32>, String> {
+    let Some(public_id) = public_id else {
+        return Ok(None);
+    };
+    let row: Option<(i32,)> =
+        sqlx::query_as("SELECT id FROM categories WHERE public_id = $1 AND user_id = $2")
+            .bind(public_id)
+            .bind(user_id)
+            .fetch_optional(&mut *conn)
+            .await
+            .map_err(|_| "Error al buscar la categoría".to_string())?;
+    row.map(|(id,)| Some(id))
+        .ok_or_else(|| "Categoría no encontrada".to_string())
+}
+
 async fn category_label_for(
     conn: &mut sqlx::PgConnection,
     user_id: i32,
@@ -107,26 +145,18 @@ async fn category_label_for(
 }
 
 /// Alta de asiento; con `rec` crea la recurrencia y materializa los
-/// futuros del año. Devuelve (id del asiento, futuros generados).
+/// futuros del año. Devuelve (public_id del asiento, futuros generados).
 pub async fn create_transaction(
     conn: &mut sqlx::PgConnection,
     user_id: i32,
     input: &TransactionInput,
-) -> Result<(i32, i64), String> {
+) -> Result<(Uuid, i64), String> {
     validate_common(input)?;
     let description = input.description.trim().to_string();
 
-    let account: Option<(i32,)> =
-        sqlx::query_as("SELECT id FROM accounts WHERE id = $1 AND user_id = $2")
-            .bind(input.account_id)
-            .bind(user_id)
-            .fetch_optional(&mut *conn)
-            .await
-            .map_err(|_| "Error al buscar la cuenta".to_string())?;
-    if account.is_none() {
-        return Err("Cuenta no encontrada".into());
-    }
-    let category_label = category_label_for(&mut *conn, user_id, input.category_id).await?;
+    let account_id = resolve_account(&mut *conn, user_id, input.account_id).await?;
+    let category_id = resolve_category(&mut *conn, user_id, input.category_id).await?;
+    let category_label = category_label_for(&mut *conn, user_id, category_id).await?;
 
     let mut recurrence_id: Option<i32> = None;
     if input.recurrence.is_some() {
@@ -138,8 +168,8 @@ pub async fn create_transaction(
             RETURNING id",
         )
         .bind(user_id)
-        .bind(input.account_id)
-        .bind(input.category_id)
+        .bind(account_id)
+        .bind(category_id)
         .bind(&category_label)
         .bind(&description)
         .bind(input.amount)
@@ -154,16 +184,16 @@ pub async fn create_transaction(
         recurrence_id = Some(row.0);
     }
 
-    let row: (i32,) = sqlx::query_as(
+    let row: (i32, Uuid) = sqlx::query_as(
         "INSERT INTO transactions
             (user_id, account_id, category_id, category_label, description,
              amount, is_income, currency, entry_date, recurrence_id)
         VALUES ($1, $2, $3, $4, $5, $6::numeric, $7, $8, $9::date, $10)
-        RETURNING id",
+        RETURNING id, public_id",
     )
     .bind(user_id)
-    .bind(input.account_id)
-    .bind(input.category_id)
+    .bind(account_id)
+    .bind(category_id)
     .bind(&category_label)
     .bind(&description)
     .bind(input.amount)
@@ -191,18 +221,25 @@ pub async fn create_transaction(
     } else {
         0
     };
-    Ok((row.0, generated))
+    Ok((row.1, generated))
 }
 
 /// UPDATE de la fila del asiento, con el rec_id explícito (None = NULL).
+/// Datos ya resueltos (ids internos) para el UPDATE de la fila del asiento.
+struct RowUpdate<'a> {
+    account_id: i32,
+    category_id: Option<i32>,
+    description: &'a str,
+    category_label: &'a str,
+    recurrence_id: Option<i32>,
+}
+
 async fn update_transaction_row(
     conn: &mut sqlx::PgConnection,
     user_id: i32,
     transaction_id: i32,
     input: &TransactionInput,
-    description: &str,
-    category_label: &str,
-    recurrence_id: Option<i32>,
+    patch: &RowUpdate<'_>,
 ) -> Result<(), String> {
     sqlx::query(
         "UPDATE transactions SET account_id = $3, category_id = $4, category_label = $5,
@@ -212,15 +249,15 @@ async fn update_transaction_row(
     )
     .bind(transaction_id)
     .bind(user_id)
-    .bind(input.account_id)
-    .bind(input.category_id)
-    .bind(category_label)
-    .bind(description)
+    .bind(patch.account_id)
+    .bind(patch.category_id)
+    .bind(patch.category_label)
+    .bind(patch.description)
     .bind(input.amount)
     .bind(input.is_income)
     .bind(&input.currency)
     .bind(&input.entry_date)
-    .bind(recurrence_id)
+    .bind(patch.recurrence_id)
     .execute(&mut *conn)
     .await
     .map_err(|_| "Error al guardar el asiento".to_string())?;
@@ -256,17 +293,9 @@ pub async fn update_transaction(
     let (previous_recurrence_id, original_date) =
         previous.ok_or_else(|| "Asiento no encontrado".to_string())?;
 
-    let account: Option<(i32,)> =
-        sqlx::query_as("SELECT id FROM accounts WHERE id = $1 AND user_id = $2")
-            .bind(input.account_id)
-            .bind(user_id)
-            .fetch_optional(&mut *conn)
-            .await
-            .map_err(|_| "Error al buscar la cuenta".to_string())?;
-    if account.is_none() {
-        return Err("Cuenta no encontrada".into());
-    }
-    let category_label = category_label_for(&mut *conn, user_id, input.category_id).await?;
+    let account_id = resolve_account(&mut *conn, user_id, input.account_id).await?;
+    let category_id = resolve_category(&mut *conn, user_id, input.category_id).await?;
+    let category_label = category_label_for(&mut *conn, user_id, category_id).await?;
 
     let Some(rid) = previous_recurrence_id else {
         let Some(recurrence_input) = input.recurrence.as_ref() else {
@@ -276,9 +305,13 @@ pub async fn update_transaction(
                 user_id,
                 transaction_id,
                 input,
-                &description,
-                &category_label,
-                None,
+                &RowUpdate {
+                    account_id,
+                    category_id,
+                    description: &description,
+                    category_label: &category_label,
+                    recurrence_id: None,
+                },
             )
             .await?;
             return Ok(0);
@@ -292,8 +325,8 @@ pub async fn update_transaction(
             RETURNING id",
         )
         .bind(user_id)
-        .bind(input.account_id)
-        .bind(input.category_id)
+        .bind(account_id)
+        .bind(category_id)
         .bind(&category_label)
         .bind(&description)
         .bind(input.amount)
@@ -310,9 +343,13 @@ pub async fn update_transaction(
             user_id,
             transaction_id,
             input,
-            &description,
-            &category_label,
-            Some(row.0),
+            &RowUpdate {
+                account_id,
+                category_id,
+                description: &description,
+                category_label: &category_label,
+                recurrence_id: Some(row.0),
+            },
         )
         .await?;
         materialize(&mut *conn, user_id, &crate::date::today_iso())
@@ -338,9 +375,13 @@ pub async fn update_transaction(
             user_id,
             transaction_id,
             input,
-            &description,
-            &category_label,
-            Some(rid),
+            &RowUpdate {
+                account_id,
+                category_id,
+                description: &description,
+                category_label: &category_label,
+                recurrence_id: Some(rid),
+            },
         )
         .await?;
         return Ok(0);
@@ -368,9 +409,13 @@ pub async fn update_transaction(
             user_id,
             transaction_id,
             input,
-            &description,
-            &category_label,
-            None,
+            &RowUpdate {
+                account_id,
+                category_id,
+                description: &description,
+                category_label: &category_label,
+                recurrence_id: None,
+            },
         )
         .await?;
         sqlx::query("DELETE FROM recurrences WHERE id = $1 AND user_id = $2")
@@ -406,8 +451,8 @@ pub async fn update_transaction(
     )
     .bind(rid)
     .bind(user_id)
-    .bind(input.account_id)
-    .bind(input.category_id)
+    .bind(account_id)
+    .bind(category_id)
     .bind(&category_label)
     .bind(&description)
     .bind(input.amount)
@@ -424,9 +469,13 @@ pub async fn update_transaction(
         user_id,
         transaction_id,
         input,
-        &description,
-        &category_label,
-        Some(rid),
+        &RowUpdate {
+            account_id,
+            category_id,
+            description: &description,
+            category_label: &category_label,
+            recurrence_id: Some(rid),
+        },
     )
     .await?;
     materialize(&mut *conn, user_id, &crate::date::today_iso())
@@ -491,7 +540,7 @@ pub async fn transaction_create(
 
 #[patch("/api/transactions/{id}")]
 pub async fn transaction_update(
-    path: web::Path<i32>,
+    path: web::Path<Uuid>,
     body: web::Json<TransactionInput>,
     session: Session,
     pool: web::Data<PgPool>,
@@ -499,15 +548,25 @@ pub async fn transaction_update(
     let Some(user_id) = session_user_id(&session) else {
         return HttpResponse::Unauthorized().finish();
     };
-    let id = path.into_inner();
+    let public_id = path.into_inner();
     let mut conn = match pool.get_ref().acquire().await {
         Ok(c) => c,
         Err(_) => return HttpResponse::InternalServerError().body("Error de conexión"),
     };
-    match update_transaction(&mut conn, user_id, id, &body).await {
-        // mismo shape que el POST: el frontend resalta data.id y avisa data.futuros
+    let internal: Option<(i32,)> =
+        sqlx::query_as("SELECT id FROM transactions WHERE public_id = $1 AND user_id = $2")
+            .bind(public_id)
+            .bind(user_id)
+            .fetch_optional(&mut *conn)
+            .await
+            .unwrap_or(None);
+    let Some((transaction_id,)) = internal else {
+        return HttpResponse::NotFound().finish();
+    };
+    match update_transaction(&mut conn, user_id, transaction_id, &body).await {
+        // mismo shape que el POST: el frontend resalta data.id y avisa data.generated
         Ok(generated) => {
-            HttpResponse::Ok().json(serde_json::json!({ "id": id, "generated": generated }))
+            HttpResponse::Ok().json(serde_json::json!({ "id": public_id, "generated": generated }))
         }
         Err(msg) => error_response(msg),
     }
@@ -515,18 +574,29 @@ pub async fn transaction_update(
 
 #[delete("/api/transactions/{id}")]
 pub async fn transaction_delete(
-    path: web::Path<i32>,
+    path: web::Path<Uuid>,
     session: Session,
     pool: web::Data<PgPool>,
 ) -> impl Responder {
     let Some(user_id) = session_user_id(&session) else {
         return HttpResponse::Unauthorized().finish();
     };
+    let public_id = path.into_inner();
     let mut conn = match pool.get_ref().acquire().await {
         Ok(c) => c,
         Err(_) => return HttpResponse::InternalServerError().body("Error de conexión"),
     };
-    match delete_transaction(&mut conn, user_id, path.into_inner()).await {
+    let internal: Option<(i32,)> =
+        sqlx::query_as("SELECT id FROM transactions WHERE public_id = $1 AND user_id = $2")
+            .bind(public_id)
+            .bind(user_id)
+            .fetch_optional(&mut *conn)
+            .await
+            .unwrap_or(None);
+    let Some((transaction_id,)) = internal else {
+        return HttpResponse::NotFound().finish();
+    };
+    match delete_transaction(&mut conn, user_id, transaction_id).await {
         Ok(0) => HttpResponse::NotFound().finish(),
         Ok(_) => HttpResponse::Ok().body("Asiento borrado"),
         Err(_) => HttpResponse::InternalServerError().body("Error al borrar el asiento"),
@@ -540,6 +610,7 @@ mod tests {
     use sqlx::Connection;
     use sqlx::PgConnection;
     use std::time::{SystemTime, UNIX_EPOCH};
+    use uuid::Uuid;
 
     /// Mismo esquema que los tests de recurrencias: una transacción que se
     /// revierte, porque el rol de .env no tiene CREATEDB.
@@ -575,16 +646,17 @@ mod tests {
     }
 
     /// Siembra una serie de `filas` asientos mensuales starting en `inicio`,
-    /// todos a 320000. Devuelve (rec_id, ids en orden cronológico, cuenta_id).
+    /// todos a 320000. Devuelve (rec_id, ids en orden cronológico, public_id
+    /// de la cuenta).
     async fn seed_series(
         tx: &mut PgConnection,
         user_id: i32,
         start_date: &str,
         installment_count: Option<i16>,
         rows: i32,
-    ) -> (i32, Vec<i32>, i32) {
-        let (cid,): (i32,) = sqlx::query_as(
-            "INSERT INTO accounts (user_id, name, currency) VALUES ($1, 'Banco', 'ARS') RETURNING id",
+    ) -> (i32, Vec<i32>, Uuid) {
+        let (cid, account_public_id): (i32, Uuid) = sqlx::query_as(
+            "INSERT INTO accounts (user_id, name, currency) VALUES ($1, 'Banco', 'ARS') RETURNING id, public_id",
         )
         .bind(user_id)
         .fetch_one(&mut *tx)
@@ -624,11 +696,11 @@ mod tests {
             .expect("asiento de test");
             ids.push(id);
         }
-        (rid, ids, cid)
+        (rid, ids, account_public_id)
     }
 
     fn make_input(
-        account_id: i32,
+        account_id: Uuid,
         entry_date: &str,
         amount: f64,
         description: &str,
@@ -795,8 +867,8 @@ mod tests {
         let mut conn = connect().await;
         let mut tx = conn.begin().await.expect("tx");
         let user = make_user(&mut tx).await;
-        let (cid,): (i32,) = sqlx::query_as(
-            "INSERT INTO accounts (user_id, name, currency) VALUES ($1, 'Banco', 'ARS') RETURNING id",
+        let (cid, account_public_id): (i32, Uuid) = sqlx::query_as(
+            "INSERT INTO accounts (user_id, name, currency) VALUES ($1, 'Banco', 'ARS') RETURNING id, public_id",
         )
         .bind(user)
         .fetch_one(&mut *tx)
@@ -815,7 +887,7 @@ mod tests {
         .await
         .expect("asiento");
 
-        let e = make_input(cid, "2026-11-03", 1500.0, "Café con leche");
+        let e = make_input(account_public_id, "2026-11-03", 1500.0, "Café con leche");
         let generated = update_transaction(&mut tx, user, mid, &e)
             .await
             .expect("editar");

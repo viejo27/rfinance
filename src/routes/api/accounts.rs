@@ -2,6 +2,7 @@ use actix_session::Session;
 use actix_web::{HttpResponse, Responder, delete, patch, post, web};
 use serde::Deserialize;
 use sqlx::PgPool;
+use uuid::Uuid;
 
 use crate::routes::api::snapshot::session_user_id;
 
@@ -25,11 +26,12 @@ fn is_valid_currency(currency: &str) -> bool {
 
 /// Crear cuenta. La lógica pura es testeable: Err con el texto del
 /// problema (los que empiezan con "Error al" son fallas de base).
+/// Devuelve el public_id (UUID4) de la cuenta creada.
 pub async fn create_account(
     conn: &mut sqlx::PgConnection,
     user_id: i32,
     input: &AccountInput,
-) -> Result<i32, String> {
+) -> Result<Uuid, String> {
     let name = input.name.trim().to_string();
     if name.is_empty() {
         return Err("El nombre de la cuenta es obligatorio".into());
@@ -47,9 +49,9 @@ pub async fn create_account(
     if duplicate.is_some() {
         return Err("Ese nombre de cuenta ya existe".into());
     }
-    let row: (i32,) = sqlx::query_as(
+    let row: (Uuid,) = sqlx::query_as(
         "INSERT INTO accounts (user_id, name, currency, opening_balance)
-        VALUES ($1, $2, $3, $4::numeric) RETURNING id",
+        VALUES ($1, $2, $3, $4::numeric) RETURNING public_id",
     )
     .bind(user_id)
     .bind(&name)
@@ -66,7 +68,7 @@ pub async fn create_account(
 pub async fn update_account(
     conn: &mut sqlx::PgConnection,
     user_id: i32,
-    account_id: i32,
+    public_id: Uuid,
     patch: &AccountPatch,
 ) -> Result<(), String> {
     if patch
@@ -77,8 +79,8 @@ pub async fn update_account(
         return Err("La moneda debe ser ARS o USD".into());
     }
     let previous_name: Option<(String,)> =
-        sqlx::query_as("SELECT name FROM accounts WHERE id = $1 AND user_id = $2")
-            .bind(account_id)
+        sqlx::query_as("SELECT name FROM accounts WHERE public_id = $1 AND user_id = $2")
+            .bind(public_id)
             .bind(user_id)
             .fetch_optional(&mut *conn)
             .await
@@ -94,11 +96,11 @@ pub async fn update_account(
         }
         if new_name != previous_name {
             let dup: Option<(i32,)> = sqlx::query_as(
-                "SELECT id FROM accounts WHERE user_id = $1 AND name = $2 AND id <> $3",
+                "SELECT id FROM accounts WHERE user_id = $1 AND name = $2 AND public_id <> $3",
             )
             .bind(user_id)
             .bind(new_name)
-            .bind(account_id)
+            .bind(public_id)
             .fetch_optional(&mut *conn)
             .await
             .map_err(|_| "Error al verificar el nombre".to_string())?;
@@ -113,9 +115,9 @@ pub async fn update_account(
             name = COALESCE($3::text, name),
             currency = COALESCE($4::text, currency),
             opening_balance = COALESCE($5::numeric, opening_balance)
-        WHERE id = $1 AND user_id = $2",
+        WHERE public_id = $1 AND user_id = $2",
     )
-    .bind(account_id)
+    .bind(public_id)
     .bind(user_id)
     .bind(patch.name.as_deref().map(str::trim))
     .bind(&patch.currency)
@@ -130,10 +132,10 @@ pub async fn update_account(
 pub async fn delete_account(
     conn: &mut sqlx::PgConnection,
     user_id: i32,
-    account_id: i32,
+    public_id: Uuid,
 ) -> sqlx::Result<u64> {
-    let res = sqlx::query("DELETE FROM accounts WHERE id = $1 AND user_id = $2")
-        .bind(account_id)
+    let res = sqlx::query("DELETE FROM accounts WHERE public_id = $1 AND user_id = $2")
+        .bind(public_id)
         .bind(user_id)
         .execute(&mut *conn)
         .await?;
@@ -169,7 +171,7 @@ pub async fn account_create(
 
 #[patch("/api/accounts/{id}")]
 pub async fn account_update(
-    path: web::Path<i32>,
+    path: web::Path<Uuid>,
     body: web::Json<AccountPatch>,
     session: Session,
     pool: web::Data<PgPool>,
@@ -189,7 +191,7 @@ pub async fn account_update(
 
 #[delete("/api/accounts/{id}")]
 pub async fn account_delete(
-    path: web::Path<i32>,
+    path: web::Path<Uuid>,
     session: Session,
     pool: web::Data<PgPool>,
 ) -> impl Responder {

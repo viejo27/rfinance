@@ -63,6 +63,21 @@ There are no automated tests in the repository yet. When adding some, prefer
 - Never introduce a migration, column, class, id or identifier with a
   Spanish name; if you find a legacy one, rename it in a dedicated change.
 
+### Public identifiers (API)
+- Every resource exposed by the API is identified by `public_id` (UUID4),
+  never by the internal serial id. Internal PKs/FKs stay `SERIAL` and are
+  only used inside SQL joins and handlers.
+- Every table exposed by the API carries
+  `public_id UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE`; the UNIQUE
+  constraint creates the btree index used by `WHERE public_id = $1`.
+- Routes take `web::Path<Uuid>`; handlers resolve the internal id
+  (`SELECT id FROM <table> WHERE public_id = $1 AND user_id = $2`) before
+  calling the pure logic, which keeps working with ints.
+- Never expose serial ids in routes or JSON; JSON keys keep their names
+  (`id`, `account_id`, `category_id`, `recurrence_id`) but carry UUIDs.
+- `user_id` never travels to the frontend: it lives in the signed session
+  and every query filters by `session_user_id(&session)`.
+
 ### Naming Conventions
 - Functions/variables: snake_case (`get_user`, `db_pool`)
 - Constants: SCREAMING_SNAKE_CASE (`MAX_CONNECTIONS`)

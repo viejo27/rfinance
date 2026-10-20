@@ -616,8 +616,9 @@
 		fSel.appendChild(allOption);
 		for (var j = 0; j < snapshot.categories.length; j++) {
 			var name = snapshot.categories[j].name;
+			// el form manda category_id (UUID); el filtro sigue filtrando por nombre
 			var o2 = el('option', null, name.toUpperCase());
-			o2.value = name;
+			o2.value = String(snapshot.categories[j].id);
 			catSel.appendChild(o2);
 			var o3 = el('option', null, name.toUpperCase());
 			o3.value = name;
@@ -643,8 +644,8 @@
 		var entry_date = $('entryDate').value;
 		var amount = parseFloat(($('entryAmount').value || '').replace(',', '.'));
 		var description = $('entryDescription').value.trim();
-		var accountId = parseInt($('entryAccount').value, 10);
-		var catId = parseInt($('entryCategory').value, 10);
+		var accountId = $('entryAccount').value;
+		var catId = $('entryCategory').value || null;
 		var currency = $('entryCurrency').value;
 		var isExpense = document.querySelector('input[name="entryType"]:checked').value === 'expense';
 		var recurrence = $('entryRecurring').checked;
@@ -655,7 +656,7 @@
 			showNotice('Falta fecha, concepto o un monto mayor que cero. Corrige y anota de nuevo.', 'notice-danger');
 			return;
 		}
-		if (!Number.isFinite(accountId)) {
+		if (!accountId) {
 			showNotice('Primero agrega una cuenta en la sección CUENTAS.', 'notice-danger');
 			return;
 		}
@@ -663,13 +664,13 @@
 		var body = {
 			entry_date: entry_date,
 			account_id: accountId,
-			category_id: Number.isFinite(catId) ? catId : null,
+			category_id: catId,
 			description: description,
 			amount: amount,
 			is_income: !isExpense,
 			currency: currency,
 		};
-		if (recurrence) body.recurrence = { installments: installments };
+		if (recurrence) body.recurrence = { installment_count: installments };
 
 		try {
 			var r;
@@ -742,7 +743,7 @@
 		document.querySelector('input[name="entryType"][value="' + (m.value < 0 ? 'expense' : 'income') + '"]').checked = true;
 		syncSelects();
 		$('entryAccount').value = String(m.account_id);
-		$('entryCategory').value = m.category_id === null ? '' : m.category;
+		$('entryCategory').value = m.category_id === null ? '' : String(m.category_id);
 		$('entryDescription').value = m.description;
 		var recurrence = null;
 		for (var i = 0; i < snapshot.recurrences.length; i++) {

@@ -1,6 +1,7 @@
 use actix_session::Session;
 use actix_web::{HttpResponse, Responder, delete, web};
 use sqlx::PgPool;
+use uuid::Uuid;
 
 use crate::date;
 use crate::routes::api::snapshot::session_user_id;
@@ -140,18 +141,29 @@ pub async fn materialize(
 /// cargados (el FK con SET NULL les saca el rec_id al caer la rec).
 #[delete("/api/recurrences/{id}")]
 pub async fn recurrence_delete(
-    path: web::Path<i32>,
+    path: web::Path<Uuid>,
     session: Session,
     pool: web::Data<PgPool>,
 ) -> impl Responder {
     let Some(user_id) = session_user_id(&session) else {
         return HttpResponse::Unauthorized().finish();
     };
+    let public_id = path.into_inner();
     let mut conn = match pool.get_ref().acquire().await {
         Ok(c) => c,
         Err(_) => return HttpResponse::InternalServerError().body("Error de conexión"),
     };
-    match delete_recurrence(&mut conn, user_id, path.into_inner()).await {
+    let internal: Option<(i32,)> =
+        sqlx::query_as("SELECT id FROM recurrences WHERE public_id = $1 AND user_id = $2")
+            .bind(public_id)
+            .bind(user_id)
+            .fetch_optional(&mut *conn)
+            .await
+            .unwrap_or(None);
+    let Some((recurrence_id,)) = internal else {
+        return HttpResponse::NotFound().finish();
+    };
+    match delete_recurrence(&mut conn, user_id, recurrence_id).await {
         Ok((generated, _)) => {
             HttpResponse::Ok().json(serde_json::json!({ "deletedScheduled": generated }))
         }
