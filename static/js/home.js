@@ -614,6 +614,10 @@
 		var allOption = el('option', null, 'TODAS CATEGORÍAS');
 		allOption.value = '';
 		fSel.appendChild(allOption);
+		// el form puede quedar sin categoría: value '' -> category_id null
+		var noneOption = el('option', null, 'SIN CATEGORÍA');
+		noneOption.value = '';
+		catSel.appendChild(noneOption);
 		for (var j = 0; j < snapshot.categories.length; j++) {
 			var name = snapshot.categories[j].name;
 			// el form manda category_id (UUID); el filtro sigue filtrando por nombre
