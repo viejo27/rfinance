@@ -9,11 +9,11 @@ pub async fn extract(req: &ServiceRequest) -> Result<HashSet<Role>, Error> {
 
     let mut roles = HashSet::new();
 
-    if let Some(role_str) = session.get::<String>("user_role").ok().flatten() 
-    && let Ok(role) = role_str.parse::<Role>() {
+    if let Some(role_str) = session.get::<String>("user_role").ok().flatten()
+        && let Ok(role) = role_str.parse::<Role>()
+    {
         roles.insert(role);
     }
-    
 
     Ok(roles)
 }

@@ -46,6 +46,12 @@ struct ActiveRecurrence {
     installments_generated: i16,
 }
 
+/// Tope de asientos insertados por recurrencia en una sola llamada: una
+/// serie de 600 cuotas completa su materializado en varias pasadas (cada
+/// carga de `/` continúa desde el cursor). Contiene el costo de un solo
+/// request ante tenants desbordados.
+const MAX_INSERTS_PER_CALL: i64 = 120;
+
 /// Materializa los asientos futuros que falten para cada recurrencia
 /// activa del usuario. Idempotente: el cursor es cuotas_generadas.
 ///
@@ -75,10 +81,13 @@ pub async fn materialize(
         let base = start_year * 12 + (start_month - 1);
         let source_day = i64::from(r.day_of_month);
 
-        let mut inserted = 0;
+        let mut inserted: i64 = 0;
         let mut k = i64::from(r.installments_generated) + 1;
         loop {
             if r.installment_count.is_some_and(|c| k > i64::from(c)) {
+                break;
+            }
+            if inserted >= MAX_INSERTS_PER_CALL {
                 break;
             }
             let target = base + (k - 1);
@@ -346,6 +355,32 @@ mod tests {
             .await
             .expect("agotada");
         assert_eq!(count_for_recurrence(&mut tx, recurrence).await, 12);
+
+        tx.rollback().await.expect("rollback");
+    }
+
+    #[async_std::test]
+    async fn materialize_caps_per_call() {
+        // Una serie de 600 cuotas no se cuelga el request: una llamada
+        // materializa como mucho el tope, y la siguiente pasada continúa
+        // desde el cursor (idempotente).
+        let mut conn = connect().await;
+        let mut tx = conn.begin().await.expect("tx");
+        let user = make_user(&mut tx).await;
+        let recurrence = seed_recurrence(&mut tx, user, "2026-10-12", Some(600), 1).await;
+
+        materialize(&mut tx, user, "2026-10-15")
+            .await
+            .expect("materializar");
+
+        // origen ya cargado + tope de 120 inserts por llamada
+        assert_eq!(count_for_recurrence(&mut tx, recurrence).await, 121);
+        assert_eq!(generated_for(&mut tx, recurrence).await, 121);
+
+        materialize(&mut tx, user, "2026-10-15")
+            .await
+            .expect("continuar");
+        assert_eq!(count_for_recurrence(&mut tx, recurrence).await, 241);
 
         tx.rollback().await.expect("rollback");
     }

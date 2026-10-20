@@ -4,7 +4,12 @@ use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::routes::api::MAX_FINANCIAL_VALUE;
 use crate::routes::api::snapshot::session_user_id;
+
+/// Largo del nombre de categoría: igual al VARCHAR(60) de la base, pero
+/// rechazado acá con 400 antes de que la constraint lo convierta en 500.
+const MAX_NAME_LENGTH: usize = 60;
 
 /// Payload del form de alta/edición: el front siempre manda los tres
 /// campos completos (reemplazo total), así el límite puede volver a null.
@@ -19,6 +24,12 @@ fn is_valid_currency(currency: &str) -> bool {
     currency == "ARS" || currency == "USD"
 }
 
+/// El límite del presupuesto es opcional; si viene, es un número real no
+/// negativo que entra en el NUMERIC(14,2).
+fn is_valid_budget_limit(value: f64) -> bool {
+    value.is_finite() && (0.0..=MAX_FINANCIAL_VALUE).contains(&value)
+}
+
 pub async fn create_category(
     conn: &mut sqlx::PgConnection,
     user_id: i32,
@@ -28,8 +39,16 @@ pub async fn create_category(
     if name.is_empty() {
         return Err("El nombre de la categoría es obligatorio".into());
     }
+    if name.chars().count() > MAX_NAME_LENGTH {
+        return Err("El nombre de la categoría no puede superar los 60 caracteres".into());
+    }
     if !is_valid_currency(&input.currency) {
         return Err("La moneda debe ser ARS o USD".into());
+    }
+    if let Some(limite) = input.budget_limit
+        && !is_valid_budget_limit(limite)
+    {
+        return Err("El límite del presupuesto no es un número válido".into());
     }
     let duplicate: Option<(i32,)> =
         sqlx::query_as("SELECT id FROM categories WHERE user_id = $1 AND name = $2")
@@ -67,8 +86,16 @@ pub async fn update_category(
     if name.is_empty() {
         return Err("El nombre de la categoría es obligatorio".into());
     }
+    if name.chars().count() > MAX_NAME_LENGTH {
+        return Err("El nombre de la categoría no puede superar los 60 caracteres".into());
+    }
     if !is_valid_currency(&input.currency) {
         return Err("La moneda debe ser ARS o USD".into());
+    }
+    if let Some(limite) = input.budget_limit
+        && !is_valid_budget_limit(limite)
+    {
+        return Err("El límite del presupuesto no es un número válido".into());
     }
     let previous: Option<(i32, String)> =
         sqlx::query_as("SELECT id, name FROM categories WHERE public_id = $1 AND user_id = $2")

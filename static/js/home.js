@@ -61,8 +61,10 @@
 		return r;
 	}
 
-	async function loadSnapshot() {
-		var r = await request('/api/snapshot');
+	async function loadSnapshot(year) {
+		// El libro vive por año: sin año = el corriente (default del API).
+		var url = year ? '/api/snapshot?year=' + year : '/api/snapshot';
+		var r = await request(url);
 		if (!r.ok) throw new Error('el servidor no contesta el estado');
 		snapshot = await r.json();
 		if (!viewedMonth) viewedMonth = monthIso(snapshot.year, snapshot.month);
@@ -297,20 +299,40 @@
 	$('monthPrev').addEventListener('click', function () { changeMonth(-1); });
 	$('monthNext').addEventListener('click', function () { changeMonth(1); });
 
-	function changeMonth(delta) {
-		var parts = viewedMonth.split('-');
-		var total = Number(parts[0]) * 12 + Number(parts[1]) - 1 + delta;
-		viewedMonth = monthIso(Math.floor(total / 12), (total % 12 + 1));
+	// Cambio de mes, recargando el snapshot si el target cruza de año
+	// (el API sirve el libro año por año).
+	async function goToMonth(target) {
+		var targetYear = Number(target.slice(0, 4));
+		if (snapshot && targetYear !== snapshot.year) {
+			try {
+				await loadSnapshot(targetYear);
+			} catch (err) {
+				showNotice('No se pudo cargar el año ' + targetYear + '.', 'notice-danger');
+				return;
+			}
+			viewedMonth = target;
+			renderAll();
+			return;
+		}
+		viewedMonth = target;
 		renderMonthNav();
 		renderLedger();
 		renderBudget();
 	}
 
+	function changeMonth(delta) {
+		var parts = viewedMonth.split('-');
+		var total = Number(parts[0]) * 12 + Number(parts[1]) - 1 + delta;
+		var targetYear = Math.floor(total / 12);
+		if (targetYear < 2000 || targetYear > 2100) return;
+		goToMonth(monthIso(targetYear, (total % 12 + 1)));
+	}
+
 	$('monthToday').addEventListener('click', function () {
-		viewedMonth = monthIso(snapshot.year, snapshot.month);
-		renderMonthNav();
-		renderLedger();
-		renderBudget();
+		// snapshot.today es el hoy real del server: sirve aunque el snapshot
+		// en memoria sea de un año antiguo.
+		var hoy = monthIso(Number(snapshot.today.slice(0, 4)), Number(snapshot.today.slice(5, 7)));
+		goToMonth(hoy);
 	});
 
 	// ---------- libro contable (mes visto) ----------

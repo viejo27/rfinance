@@ -14,4 +14,6 @@ pub use logout::logout as api_logout;
 pub use recurrences::recurrence_delete as api_recurrence_delete;
 pub use register::register as api_register;
 pub use snapshot::snapshot as api_snapshot;
-pub use transactions::{transaction_create, transaction_delete, transaction_update};
+pub use transactions::{
+    MAX_FINANCIAL_VALUE, transaction_create, transaction_delete, transaction_update,
+};

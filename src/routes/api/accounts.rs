@@ -4,7 +4,17 @@ use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
+use crate::routes::api::MAX_FINANCIAL_VALUE;
 use crate::routes::api::snapshot::session_user_id;
+
+/// Largo del nombre de cuenta (menor que el VARCHAR(100) de la base).
+const MAX_NAME_LENGTH: usize = 100;
+
+/// El saldo inicial tiene que caber en el NUMERIC(14,2) y ser un número de
+/// verdad: NaN/infinito se rechaza con 400, no se le deja morir al bind.
+fn is_valid_opening_balance(value: f64) -> bool {
+    value.is_finite() && value.abs() <= MAX_FINANCIAL_VALUE
+}
 
 #[derive(Deserialize)]
 pub struct AccountInput {
@@ -36,8 +46,16 @@ pub async fn create_account(
     if name.is_empty() {
         return Err("El nombre de la cuenta es obligatorio".into());
     }
+    if name.chars().count() > MAX_NAME_LENGTH {
+        return Err("El nombre de la cuenta no puede superar los 100 caracteres".into());
+    }
     if !is_valid_currency(&input.currency) {
         return Err("La moneda debe ser ARS o USD".into());
+    }
+    if let Some(saldo) = input.opening_balance
+        && !is_valid_opening_balance(saldo)
+    {
+        return Err("El saldo inicial no es un número válido".into());
     }
     let duplicate: Option<(i32,)> =
         sqlx::query_as("SELECT id FROM accounts WHERE user_id = $1 AND name = $2")
@@ -77,6 +95,11 @@ pub async fn update_account(
         .is_some_and(|m| !is_valid_currency(m))
     {
         return Err("La moneda debe ser ARS o USD".into());
+    }
+    if let Some(saldo) = patch.opening_balance
+        && !is_valid_opening_balance(saldo)
+    {
+        return Err("El saldo inicial no es un número válido".into());
     }
     let previous_name: Option<(String,)> =
         sqlx::query_as("SELECT name FROM accounts WHERE public_id = $1 AND user_id = $2")

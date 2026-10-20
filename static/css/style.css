@@ -395,3 +395,17 @@ input[type='date'].field {
 		animation: none !important;
 	}
 }
+
+/* ============================================================
+   Componentes de auth (login.html / register.html): antes eran
+   estilos inline, movidos a clases para que la CSP estricta
+   default-src 'self' no los bloquee.
+   ============================================================ */
+
+.auth-submit {
+	margin-top: 26px;
+}
+
+.auth-rojo {
+	color: var(--rojo);
+}

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
 	<head>
 		<title></title>
 		<meta charset="UTF-8">
@@ -8,13 +8,8 @@
 		<link rel="icon" type="image/x-icon" href="/favicon.ico">
 	</head>
 	<body>
-		<button id="logoutBtn" class="logout-btn">Logout</button>
+		<button id="logoutBtn" class="logout-btn">SALIR</button>
 		<h1>Aguante el {{ number }}!!!</h1>
-		<script>
-			document.getElementById('logoutBtn').addEventListener('click', async function () {
-				await fetch('/api/logout', { method: 'POST' });
-				window.location.href = '/login';
-			});
-		</script>
+		<script src="/js/admin.js"></script>
 	</body>
 </html>

@@ -20,6 +20,13 @@ document.getElementById('registerForm').addEventListener('submit', async functio
 		return;
 	}
 
+	// Espejo del server (register.rs): la API es pública y el server
+	// revalida, acá es solo para dar el error antes.
+	if (password.length < 10 || password.length > 72) {
+		show('La contraseña debe tener entre 10 y 72 caracteres.', true);
+		return;
+	}
+
 	try {
 		const response = await fetch('/api/register', {
 			method: 'POST',

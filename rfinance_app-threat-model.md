@@ -301,3 +301,29 @@ Para **este** repo y su contexto (Internet + registro abierto + dinero real):
   se agregan uploads/integraciones externas (nuevas superficies).
 - Evidencia anclada a commits actuales de la rama de trabajo; los números de
   línea pueden correr con refactors menores.
+
+## Mitigations implemented (2026-10-20)
+
+Plan de mitigación ejecutado (ver `SECURITY.md` y el ejemplo de proxy en
+`deploy/`). Cobertura por amenaza:
+
+| TM | Mitigación implementada | Evidencia |
+|---|---|---|
+| TM-001 | Rate limit in-app 5/min por IP real en login + logging de fallos | `src/main.rs` (actix-governor, `RealIpKeyExtractor`); segunda capa: `deploy/nginx-rfinance.example.conf` |
+| TM-002 | `SESSION_KEY` validada al arranque con mensaje accionable; rol de `/admin` revalidado contra la DB; runbook de rotación | `src/main.rs`; `src/routes/web/admin.rs`; `SECURITY.md` |
+| TM-003 | TTL de sesión 27 → 7 días; `APP_ENV=production` en checklist de despliegue | `src/main.rs`; `SECURITY.md` |
+| TM-004 | Cuotas 1..=600; tope de 120 inserts por `materialize` por llamada; snapshot por año (`?year=`) con LIMIT 5000; rate limit en register | `src/routes/api/transactions.rs`; `src/routes/api/recurrences.rs`; `src/routes/api/snapshot.rs` |
+| TM-005 | Política de contraseña (10..=72 bytes) y validación de email server-side; espejo client-side | `src/routes/api/register.rs`; `static/js/register.js` |
+| TM-006 | bcrypt dummy para emails inexistentes (timing uniforme); mensaje de register conservado por decisión de producto | `src/routes/api/login.rs` |
+| TM-007 | `Logger` de actix + middleware `AUDIT` con user_id para mutaciones de `/api/` | `src/main.rs`; `src/middleware/audit.rs` |
+| TM-008 | Fechas con día real (31/02 → 400, además fix de panic con multibyte); largos y finitud de montos server-side; `unwrap`/`expect` fuera de handlers; carrera de email → 400 | `transactions.rs` (`is_valid_date`), `accounts.rs`, `categories.rs`, `login.rs`, `register.rs` |
+| TM-009 | CSP `default-src 'self'; frame-ancestors 'none'` + `nosniff` + `X-Frame-Options` + `Referrer-Policy`; script inline de admin.html extraído a `/js/admin.js`; estilos inline de login/register a clases CSS | `src/middleware/headers.rs`; `templates/*`; `static/css/style.css` |
+| TM-010 | Directory listing eliminado de `/css` y `/js` | `src/main.rs` |
+| TM-011 | Postura CSRF documentada como requisito de repo (mutantes solo `web::Json` + SameSite=Lax) | `SECURITY.md` |
+| TM-012 | Cache `.sqlx` offline generada y commiteada; builds sin DB (`SQLX_OFFLINE=true`) | `.sqlx/`; `AGENTS.md` |
+
+Smoke test E2E verificado contra la base local: headers en 302/200, listing
+404, 5 logins/min por IP (6to → 429), validaciones de register/asientos en
+400, snapshot por año, `/admin` en 404 para rol user, `AUDIT` con `user_id`
+en mutaciones autenticadas, y serie de 600 cuotas con `generated: 120`
+(corte por llamada activo).

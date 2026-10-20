@@ -4,8 +4,21 @@ use serde::Deserialize;
 use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::routes::api::recurrences::materialize;
+use crate::routes::api::recurrences::{last_day_of_month, materialize};
 use crate::routes::api::snapshot::session_user_id;
+
+/// Tope de cuotas por recurrencia. Coincide con el `max` del form del
+/// dashboard (templates/index.html) y evita que un POST suelto dispare miles
+/// de inserts.
+pub const MAX_INSTALLMENT_COUNT: i16 = 600;
+
+/// Tope financiero del NUMERIC(14,2) de la base: cualquier cosa mayor es
+/// basura de input y se rechaza con 400 en vez de morir en un 500.
+pub const MAX_FINANCIAL_VALUE: f64 = 999_999_999_999.99;
+
+/// Largo del concepto, igual al VARCHAR(200) de la base: mejor 400 acá que
+/// un 500 de constraint.
+pub const MAX_DESCRIPTION_LENGTH: usize = 200;
 
 #[derive(Deserialize)]
 pub struct RecurrenceInput {
@@ -42,18 +55,23 @@ fn is_valid_currency(currency: &str) -> bool {
     currency == "ARS" || currency == "USD"
 }
 
-/// Valida un ISO YYYY-MM-DD parseable y con mes/día en rango.
+/// Valida un ISO YYYY-MM-DD con mes y día reales (31 de febrero se rechaza)
+/// y año dentro del rango razonable del libro. Los .get() cortan por bytes
+/// sin verse tentados a un slice en medio de un carácter multibyte, que
+/// antes panicaba ("2026-12-éé").
 fn is_valid_date(entry_date: &str) -> bool {
-    let b = entry_date.as_bytes();
-    if entry_date.len() != 10 || b[4] != b'-' || b[7] != b'-' {
+    if entry_date.len() != 10 {
         return false;
     }
-    let (y, m, d) = (
-        entry_date[0..4].parse::<i64>().unwrap_or(0),
-        entry_date[5..7].parse::<i64>().unwrap_or(0),
-        entry_date[8..10].parse::<i64>().unwrap_or(0),
-    );
-    y >= 2000 && (1..=12).contains(&m) && (1..=31).contains(&d)
+    let year = entry_date.get(0..4).and_then(|s| s.parse::<i64>().ok());
+    let month = entry_date.get(5..7).and_then(|s| s.parse::<i64>().ok());
+    let day = entry_date.get(8..10).and_then(|s| s.parse::<i64>().ok());
+    let (Some(y), Some(m), Some(d)) = (year, month, day) else {
+        return false;
+    };
+    (2000..=2100).contains(&y)
+        && (1..=12).contains(&m)
+        && (1..=last_day_of_month(y, m)).contains(&d)
 }
 
 fn day_of(entry_date: &str) -> i16 {
@@ -77,11 +95,24 @@ fn validate_common(input: &TransactionInput) -> Result<(), String> {
     if input.description.trim().is_empty() {
         return Err("El concepto es obligatorio".into());
     }
+    if input.description.chars().count() > MAX_DESCRIPTION_LENGTH {
+        return Err("El concepto no puede superar los 200 caracteres".into());
+    }
     if !(input.amount > 0.0 && input.amount.is_finite()) {
         return Err("El monto debe ser mayor que cero".into());
     }
+    if input.amount > MAX_FINANCIAL_VALUE {
+        return Err("El monto excede el máximo permitido".into());
+    }
     if !is_valid_currency(&input.currency) {
         return Err("La moneda debe ser ARS o USD".into());
+    }
+    // Cuotas 0 o negativas no explotaban pero rompían la serie en
+    // silencio; con rango explícito el 400 convive con el max del form.
+    if let Some(cuotas) = input.recurrence.as_ref().and_then(|r| r.installment_count)
+        && !(1..=MAX_INSTALLMENT_COUNT).contains(&cuotas)
+    {
+        return Err("Las cuotas deben estar entre 1 y 600".into());
     }
     Ok(())
 }
@@ -605,12 +636,105 @@ pub async fn transaction_delete(
 
 #[cfg(test)]
 mod tests {
-    use super::{RecurrenceInput, Scope, TransactionInput, update_transaction};
+    use super::{
+        MAX_DESCRIPTION_LENGTH, MAX_FINANCIAL_VALUE, MAX_INSTALLMENT_COUNT, RecurrenceInput, Scope,
+        TransactionInput, is_valid_date, update_transaction, validate_common,
+    };
     use crate::routes::api::recurrences::last_day_of_month;
     use sqlx::Connection;
     use sqlx::PgConnection;
     use std::time::{SystemTime, UNIX_EPOCH};
     use uuid::Uuid;
+
+    // ---------- validaciones (puras, sin base) ----------
+
+    #[test]
+    fn fecha_real_esta_serio() {
+        assert!(is_valid_date("2026-10-20"));
+        assert!(is_valid_date("2024-02-29")); // bisiesto
+        assert!(!is_valid_date("2026-02-30")); // hasta el 28
+        assert!(!is_valid_date("2027-02-29")); // no bisiesto
+        assert!(!is_valid_date("2026-02-31"));
+        assert!(!is_valid_date("2026-13-01"));
+        assert!(!is_valid_date("2026-10-20 ")); // colado
+        assert!(!is_valid_date("2026-10-2"));
+        assert!(!is_valid_date("1999-12-31")); // fuera del rango del libro
+        assert!(!is_valid_date("2101-01-01"));
+        // símbolos multibyte en posiciones del día: ni panic ni aceptación
+        assert!(!is_valid_date("2026-12-éé"));
+        assert!(!is_valid_date(""));
+    }
+
+    #[test]
+    fn limites_de_monto() {
+        let mut input = TransactionInput {
+            entry_date: "2026-10-20".into(),
+            account_id: Uuid::new_v4(),
+            category_id: None,
+            description: "Café".into(),
+            amount: 100.0,
+            is_income: false,
+            currency: "ARS".into(),
+            recurrence: None,
+            scope: None,
+        };
+        assert!(validate_common(&input).is_ok());
+
+        input.amount = 0.0;
+        assert!(validate_common(&input).is_err());
+        input.amount = f64::NAN;
+        assert!(validate_common(&input).is_err());
+        input.amount = f64::INFINITY;
+        assert!(validate_common(&input).is_err());
+        input.amount = MAX_FINANCIAL_VALUE + 0.01;
+        assert!(validate_common(&input).is_err());
+    }
+
+    #[test]
+    fn concepto_y_cuotas() {
+        let mut input = TransactionInput {
+            entry_date: "2026-10-20".into(),
+            account_id: Uuid::new_v4(),
+            category_id: None,
+            description: "X".repeat(MAX_DESCRIPTION_LENGTH + 1),
+            amount: 100.0,
+            is_income: false,
+            currency: "ARS".into(),
+            recurrence: None,
+            scope: None,
+        };
+        assert_eq!(
+            validate_common(&input).err().as_deref(),
+            Some("El concepto no puede superar los 200 caracteres")
+        );
+
+        input.description = "Alquiler".into();
+        input.recurrence = Some(RecurrenceInput {
+            installment_count: Some(MAX_INSTALLMENT_COUNT),
+        });
+        assert!(validate_common(&input).is_ok());
+        input.recurrence = Some(RecurrenceInput {
+            installment_count: Some(MAX_INSTALLMENT_COUNT + 1),
+        });
+        assert_eq!(
+            validate_common(&input).err().as_deref(),
+            Some("Las cuotas deben estar entre 1 y 600")
+        );
+        input.recurrence = Some(RecurrenceInput {
+            installment_count: Some(0),
+        });
+        assert!(validate_common(&input).is_err());
+        input.recurrence = Some(RecurrenceInput {
+            installment_count: Some(-3),
+        });
+        assert!(validate_common(&input).is_err());
+        input.recurrence = Some(RecurrenceInput {
+            installment_count: None,
+        });
+
+        // el tope de cuotas respeta el día real del último mes
+        assert_eq!(last_day_of_month(2026, 2), 28);
+    }
 
     /// Mismo esquema que los tests de recurrencias: una transacción que se
     /// revierte, porque el rol de .env no tiene CREATEDB.

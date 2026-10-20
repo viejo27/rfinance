@@ -24,13 +24,13 @@
 					<input class="field" type="email" id="email" name="email" autocomplete="email" required>
 
 					<label class="field-label mini-label" for="password">CONTRASEÑA</label>
-					<input class="field" type="password" id="password" name="password" autocomplete="new-password" required>
+					<input class="field" type="password" id="password" name="password" autocomplete="new-password" minlength="10" maxlength="72" required>
 
-					<button class="btn btn-primary" type="submit" style="margin-top:26px">REGISTRARSE</button>
+					<button class="btn btn-primary auth-submit" type="submit">REGISTRARSE</button>
 				</form>
 				<p class="auth-link">¿Ya tienes cuenta? <a href="/login">INICIA SESIÓN</a></p>
 				<footer class="auth-footer mini-label">
-					<span>UN LIBRO, <b style="color:var(--rojo)">DOS MONEDAS</b>, CERO INTERMEDIARIOS</span>
+					<span>UN LIBRO, <b class="auth-rojo">DOS MONEDAS</b>, CERO INTERMEDIARIOS</span>
 				</footer>
 			</div>
 		</main>

@@ -28,8 +28,12 @@ Guidelines for AI agents working on this codebase.
 - `sqlx-cli` only for authoring migrations (`sqlx migrate add`); the app applies
   migrations by itself at startup, see *Database Migrations*
 
-A running database is needed **at build time**, not just at runtime, because
-`src/routes/web/admin.rs` uses the compile-time checked `sqlx::query!` macro.
+A running database is needed **at build time** only when the `.sqlx/` cache
+is missing or stale: `src/routes/web/admin.rs` uses the compile-time checked
+`sqlx::query!` macro. The `.sqlx/` offline cache is committed, so regular
+builds run with `SQLX_OFFLINE=true` and no database. Regenerate it with
+`cargo sqlx prepare` (needs a live DB once) whenever that macro's query or
+its schema change.
 
 ## Build, Lint, and Test Commands
 
@@ -251,8 +255,9 @@ rfinance_app/
 - `DATABASE_URL`: PostgreSQL connection string
 - `ADMIN_USER`: email of the account `ensure_admin_user` creates and promotes
 - `ADMIN_PASSWORD`: password for that account, only used when creating it
-- `SESSION_KEY`: 64 bytes of hex, used as the cookie signing key
-  (`openssl rand -hex 64`)
+- `SESSION_KEY`: at least 32 raw bytes, used to encrypt and sign the session
+  cookie (`openssl rand -hex 32`). Rotating it invalidates every session
+  (all users are logged out); see `SECURITY.md` for the rotation runbook.
 - `APP_ENV`: `production` enables secure cookies, anything else is development
 
 ## Notes
