@@ -19,5 +19,9 @@ async fn login(session: Session) -> impl Responder {
     }
 
     let login = LoginTemplate {};
-    HttpResponse::Ok().body(login.render().unwrap())
+    HttpResponse::Ok()
+        // Sin content-type el HTML servía como texto plano (el sniffing lo
+        // disimulaba; nosniff lo expuso). Mismo patrón que home.rs.
+        .content_type("text/html; charset=utf-8")
+        .body(login.render().unwrap())
 }

@@ -44,7 +44,11 @@ async fn admin(session: Session, db_pool: web::Data<PgPool>) -> impl Responder {
     let admin = AdminTemplate {
         number: &res.sum.unwrap(),
     };
-    HttpResponse::Ok().body(admin.render().unwrap())
+    HttpResponse::Ok()
+        // Sin content-type el HTML servía como texto plano (el sniffing lo
+        // disimulaba; nosniff lo expuso). Mismo patrón que home.rs.
+        .content_type("text/html; charset=utf-8")
+        .body(admin.render().unwrap())
 }
 
 fn admin_access_denied() -> HttpResponse {
