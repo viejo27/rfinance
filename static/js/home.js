@@ -111,15 +111,33 @@
 		return series;
 	}
 
-	function showNotice(text, cls) {
-		var notice = $('entryStatus');
+	function showNoticeIn(targetId, text, cls) {
+		var notice = $(targetId);
+		if (!notice) return;
 		notice.textContent = text;
 		notice.classList.toggle('notice-danger', cls === 'notice-danger');
 		notice.classList.toggle('notice-success', cls === 'notice-success');
 		notice.hidden = false;
 	}
 
+	function showNotice(text, cls) {
+		showNoticeIn('entryStatus', text, cls);
+	}
+
 	// ---------- banda de mando ----------
+
+	// Los totales grandes desbordan el cuadro con la tipografía al tamaño
+	// base (nowrap + clamp fijo): se achica en pasos de 2px hasta que entre,
+	// con piso de 34px. Los montos chicos quedan intactos.
+	function fitTotal(node) {
+		node.style.fontSize = '';
+		var min = 34;
+		while (node.scrollWidth > node.clientWidth) {
+			var current = parseFloat(window.getComputedStyle(node).fontSize);
+			if (current <= min) break;
+			node.style.fontSize = (current - 2) + 'px';
+		}
+	}
 
 	function renderOverview() {
 		var byCurrency = { ARS: 0, USD: 0 };
@@ -131,6 +149,8 @@
 		}
 		$('totalArs').textContent = fmt(byCurrency.ARS, 'ARS');
 		$('totalUsd').textContent = fmt(byCurrency.USD, 'USD');
+		fitTotal($('totalArs'));
+		fitTotal($('totalUsd'));
 		$('totalArs').closest('.overview-total').classList.toggle('total-negative', byCurrency.ARS < 0);
 		$('totalUsd').closest('.overview-total').classList.toggle('total-negative', byCurrency.USD < 0);
 		$('subArs').textContent = namesByCurrency.ARS.join(' · ') || 'sin cuentas ARS';
@@ -213,7 +233,10 @@
 		return b;
 	}
 
-	async function mutate(url, method, body, successNotice) {
+	async function mutate(url, method, body, successNotice, noticeId) {
+		// El aviso aterriza en la sección dueña de la operación; el form de
+		// carga (entryStatus) sigue siendo el default.
+		var target = noticeId || 'entryStatus';
 		var options = { method: method };
 		if (body !== undefined) {
 			options.headers = { 'Content-Type': 'application/json' };
@@ -222,12 +245,12 @@
 		var r = await request(url, options);
 		if (!r.ok) {
 			var text = await r.text();
-			showNotice(text || 'No se pudo guardar', 'notice-danger');
+			showNoticeIn(target, text || 'No se pudo guardar', 'notice-danger');
 			throw new Error(text);
 		}
 		await loadSnapshot();
 		renderAll();
-		if (successNotice) showNotice(successNotice, 'notice-success');
+		if (successNotice) showNoticeIn(target, successNotice, 'notice-success');
 		return r;
 	}
 
@@ -240,7 +263,7 @@
 		if (n) msg += ' Sus ' + n + ' asiento(s) del libro también se borran.';
 		if (!window.confirm(msg)) return;
 		try {
-			await mutate('/api/accounts/' + c.id, 'DELETE', undefined, 'Cuenta «' + c.name + '» borrada.');
+			await mutate('/api/accounts/' + c.id, 'DELETE', undefined, 'Cuenta «' + c.name + '» borrada.', 'accountStatus');
 		} catch (e) { /* el aviso ya quedó en pantalla */ }
 	}
 
@@ -272,10 +295,10 @@
 		};
 		try {
 			if (editingAccountId !== null) {
-				await mutate('/api/accounts/' + editingAccountId, 'PATCH', body, 'Cuenta «' + body.name + '» guardada.');
+				await mutate('/api/accounts/' + editingAccountId, 'PATCH', body, 'Cuenta «' + body.name + '» guardada.', 'accountStatus');
 				exitAccountEdit();
 			} else {
-				await mutate('/api/accounts', 'POST', body, 'Cuenta «' + body.name + '» agregada.');
+				await mutate('/api/accounts', 'POST', body, 'Cuenta «' + body.name + '» agregada.', 'accountStatus');
 				exitAccountEdit();
 			}
 		} catch (err) { /* aviso en pantalla */ }
@@ -529,7 +552,7 @@
 		if (entryCount) msg += ' Sus ' + entryCount + ' asiento(s) conservan la categoría como texto.';
 		if (!window.confirm(msg)) return;
 		try {
-			await mutate('/api/categories/' + cat.id, 'DELETE', undefined, 'Categoría «' + cat.name + '» borrada.');
+			await mutate('/api/categories/' + cat.id, 'DELETE', undefined, 'Categoría «' + cat.name + '» borrada.', 'categoryStatus');
 		} catch (e) { /* aviso en pantalla */ }
 	}
 
@@ -562,10 +585,10 @@
 		};
 		try {
 			if (editingCategoryId !== null) {
-				await mutate('/api/categories/' + editingCategoryId, 'PATCH', body, 'Categoría «' + body.name + '» guardada.');
+				await mutate('/api/categories/' + editingCategoryId, 'PATCH', body, 'Categoría «' + body.name + '» guardada.', 'categoryStatus');
 				exitCategoryEdit();
 			} else {
-				await mutate('/api/categories', 'POST', body, 'Categoría «' + body.name + '» agregada.');
+				await mutate('/api/categories', 'POST', body, 'Categoría «' + body.name + '» agregada.', 'categoryStatus');
 				exitCategoryEdit();
 			}
 		} catch (err) { /* aviso en pantalla */ }

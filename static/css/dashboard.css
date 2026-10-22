@@ -329,6 +329,13 @@
 	font-size: 0.78rem;
 }
 
+/* Avisos de sección (cuentas, presupuestos): margen propio para que no
+   queden pegados al form que sigue. */
+.section-notice {
+	margin: 0 0 14px;
+	font-size: 0.85rem;
+}
+
 /* ---------- Cuentas ---------- */
 
 .accounts {
