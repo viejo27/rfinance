@@ -223,6 +223,28 @@
 	border-color: var(--rojo);
 }
 
+/* Flujo del mes visto dentro de los bloques de totales */
+.total-month {
+	display: block;
+	margin-top: 10px;
+	padding-top: 8px;
+	border-top: 2px solid color-mix(in srgb, var(--papel) 35%, transparent);
+	font-size: 0.68rem;
+	letter-spacing: 0.03em;
+	color: color-mix(in srgb, var(--papel) 72%, var(--tinta));
+}
+
+.total-month b {
+	color: var(--papel);
+	font-weight: 700;
+	font-variant-numeric: tabular-nums;
+}
+
+.total-month b.is-deficit {
+	background: var(--rojo);
+	padding: 0 4px;
+}
+
 .overview-history {
 	min-width: 0;
 	background: var(--papel-claro);
@@ -636,6 +658,60 @@ table.ledger td:has(.amount) {
 }
 
 /* ---------- Presupuestos ---------- */
+
+/* Resumen del mes: gastos, ingresos y ahorro por moneda */
+.budget-summary {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 16px;
+	margin-bottom: 22px;
+}
+
+.summary-currency {
+	border: 3px solid var(--tinta);
+	background: var(--papel-claro);
+	min-width: 0;
+}
+
+.summary-currency-label {
+	display: block;
+	padding: 6px 12px;
+	background: var(--tinta);
+	color: var(--papel);
+}
+
+.summary-cells {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.summary-cell {
+	padding: 10px 12px;
+	min-width: 0;
+}
+
+.summary-cell + .summary-cell {
+	border-left: 2px solid var(--tinta);
+}
+
+.summary-num {
+	display: block;
+	margin-top: 4px;
+	font-family: var(--display);
+	font-size: clamp(1.15rem, 2.1vw, 1.8rem);
+	line-height: 1;
+	font-variant-numeric: tabular-nums;
+	letter-spacing: 0.01em;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.summary-num.is-deficit {
+	background: var(--rojo);
+	color: var(--papel);
+	padding: 0 4px;
+}
 
 .budget {
 	list-style: none;
@@ -1144,6 +1220,10 @@ table.ledger td:has(.amount) {
 		grid-template-columns: 1fr;
 		gap: 8px;
 	}
+
+	.budget-summary {
+		grid-template-columns: 1fr;
+	}
 }
 
 @media (max-width: 640px) {
@@ -1188,6 +1268,15 @@ table.ledger td:has(.amount) {
 
 	.accounts {
 		grid-template-columns: 1fr;
+	}
+
+	.summary-cells {
+		grid-template-columns: 1fr;
+	}
+
+	.summary-cell + .summary-cell {
+		border-left: 0;
+		border-top: 2px solid var(--tinta);
 	}
 
 	.user-email {

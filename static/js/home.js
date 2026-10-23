@@ -168,6 +168,49 @@
 		box.appendChild(yearChart(series, 'history', 'Ingresos y egresos mensuales en pesos, año ' + snapshot.year, box.clientWidth));
 	}
 
+	// ---------- flujo del mes visto ----------
+
+	// Gastos, ingresos y saldo (ingresos − gastos) del mes visto, por
+	// moneda. Los asientos en ventana DESHACER no entran, igual que en
+	// las barras de presupuesto.
+	function monthFlow() {
+		var flow = {
+			ARS: { income: 0, expense: 0 },
+			USD: { income: 0, expense: 0 },
+		};
+		for (var i = 0; i < snapshot.transactions.length; i++) {
+			var m = snapshot.transactions[i];
+			if (!isActive(m) || !isViewedMonth(m.entry_date)) continue;
+			if (!flow[m.currency]) continue;
+			if (m.value < 0) flow[m.currency].expense += -m.value;
+			else flow[m.currency].income += m.value;
+		}
+		return flow;
+	}
+
+	// Pinta el flujo en sus dos superficies: la línea de la banda de mando
+	// y la franja de totales de presupuestos.
+	function renderMonthFlow() {
+		var flow = monthFlow();
+		var monthName = MONTHS[Number(viewedMonth.slice(5, 7)) - 1];
+		var ids = { ARS: 'monthFlowArs', USD: 'monthFlowUsd' };
+		for (var cur in ids) {
+			var f = flow[cur];
+			var net = f.income - f.expense;
+			var line = $(ids[cur]);
+			line.textContent = 'MES ' + monthName + ' · ING ' + fmt(f.income, cur) +
+				' · GAS −' + fmt(f.expense, cur) + ' · ';
+			line.appendChild(el('b', net < 0 ? 'is-deficit' : null,
+				(net < 0 ? 'FALTAN ' : 'AHORRO ') + fmt(Math.abs(net), cur)));
+
+			$('summaryExpense' + cur).textContent = fmt(f.expense, cur);
+			$('summaryIncome' + cur).textContent = fmt(f.income, cur);
+			var saving = $('summarySaving' + cur);
+			saving.textContent = (net < 0 ? 'FALTAN ' : '') + fmt(Math.abs(net), cur);
+			saving.classList.toggle('is-deficit', net < 0);
+		}
+	}
+
 	function yearChart(series, cssClass, ariaLabel, W) {
 		W = Math.max(320, Math.round(W || 660));
 		var H = 240;
@@ -341,6 +384,7 @@
 		renderMonthNav();
 		renderLedger();
 		renderBudget();
+		renderMonthFlow();
 	}
 
 	function changeMonth(delta) {
@@ -453,6 +497,7 @@
 		pendingUndos[m.id] = true;
 		undoTimers[m.id] = setTimeout(function () { finalizeDelete(m.id); }, 4000);
 		renderLedger();
+		renderMonthFlow();
 	}
 
 	function undo(id) {
@@ -460,6 +505,7 @@
 		delete undoTimers[id];
 		delete pendingUndos[id];
 		renderLedger();
+		renderMonthFlow();
 	}
 
 	async function finalizeDelete(id) {
@@ -681,6 +727,7 @@
 		renderOverview();
 		renderAccounts();
 		renderBudget();
+		renderMonthFlow();
 		renderLedger(newIds);
 		renderCards();
 		renderMonthNav();

@@ -45,11 +45,13 @@
 						<span class="mini-label">TOTAL · ARS</span>
 						<span class="total-num" id="totalArs">0</span>
 						<span class="total-sub" id="subArs"></span>
+						<span class="total-month figure" id="monthFlowArs"></span>
 					</div>
 					<div class="overview-total">
 						<span class="mini-label">TOTAL · USD</span>
 						<span class="total-num" id="totalUsd">0,00</span>
 						<span class="total-sub" id="subUsd"></span>
+						<span class="total-month figure" id="monthFlowUsd"></span>
 					</div>
 
 					<div class="overview-history">
@@ -222,6 +224,43 @@
 					<span class="section-title">Presupuestos del mes</span>
 					<span class="month-label mini-label" id="budgetMonth" hidden></span>
 				</h2>
+
+				<div class="budget-summary" aria-label="Resumen del mes">
+					<div class="summary-currency">
+						<span class="summary-currency-label mini-label">MES · ARS</span>
+						<div class="summary-cells">
+							<div class="summary-cell">
+								<span class="mini-label">GASTOS</span>
+								<span class="summary-num expense" id="summaryExpenseARS">0</span>
+							</div>
+							<div class="summary-cell">
+								<span class="mini-label">INGRESOS</span>
+								<span class="summary-num income" id="summaryIncomeARS">0</span>
+							</div>
+							<div class="summary-cell">
+								<span class="mini-label">PARA AHORRAR</span>
+								<span class="summary-num" id="summarySavingARS">0</span>
+							</div>
+						</div>
+					</div>
+					<div class="summary-currency">
+						<span class="summary-currency-label mini-label">MES · USD</span>
+						<div class="summary-cells">
+							<div class="summary-cell">
+								<span class="mini-label">GASTOS</span>
+								<span class="summary-num expense" id="summaryExpenseUSD">0</span>
+							</div>
+							<div class="summary-cell">
+								<span class="mini-label">INGRESOS</span>
+								<span class="summary-num income" id="summaryIncomeUSD">0</span>
+							</div>
+							<div class="summary-cell">
+								<span class="mini-label">PARA AHORRAR</span>
+								<span class="summary-num" id="summarySavingUSD">0</span>
+							</div>
+						</div>
+					</div>
+				</div>
 
 				<ul class="budget" id="budgetList"></ul>
 
