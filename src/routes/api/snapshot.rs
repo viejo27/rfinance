@@ -65,6 +65,23 @@ pub struct RecurrenceSummary {
     pub generated: i16,
 }
 
+/// Transferencia entre cuentas: movimiento propio, no un asiento. Cada monto
+/// está en la moneda de su pata.
+#[derive(Serialize, FromRow)]
+pub struct TransferSummary {
+    pub id: Uuid,
+    pub entry_date: String,
+    pub from_account: String,
+    pub from_account_id: Uuid,
+    pub to_account: String,
+    pub to_account_id: Uuid,
+    pub from_amount: f64,
+    pub from_currency: String,
+    pub to_amount: f64,
+    pub to_currency: String,
+    pub description: String,
+}
+
 #[derive(Serialize)]
 pub struct Snapshot {
     /// Año pedido: los gráficos del dashboard rotan alrededor de este valor.
@@ -77,6 +94,7 @@ pub struct Snapshot {
     pub accounts: Vec<AccountSummary>,
     pub categories: Vec<CategorySummary>,
     pub transactions: Vec<TransactionSummary>,
+    pub transfers: Vec<TransferSummary>,
     pub recurrences: Vec<RecurrenceSummary>,
 }
 
@@ -104,10 +122,11 @@ pub async fn snapshot(
     }
 }
 
-/// Estado del año pedido: saldos por cuenta, categorías, asientos del año
-/// y recurrencias activas. Todo id expuesto es el public_id. Los saldos de
-/// cuenta son de por vida (el libro completo entra al balance); las
-/// transacciones del payload son solo del año consultado.
+/// Estado del año pedido: saldos por cuenta, categorías, asientos y
+/// transferencias del año, y recurrencias activas. Todo id expuesto es el
+/// public_id. Los saldos de cuenta son de por vida (el libro completo y las
+/// transferencias entran al balance); los movimientos del payload son solo
+/// del año consultado.
 pub async fn build_snapshot(
     conn: &mut sqlx::PgConnection,
     user_id: i32,
@@ -116,6 +135,8 @@ pub async fn build_snapshot(
     let (today_iso, cutoff) = date::today();
     let month: i64 = today_iso[5..7].parse().unwrap_or(1);
 
+    // Las transferencias se suman por pata (cada monto en la moneda de su
+    // cuenta) con subconsultas escalares: evita fan-out de joins.
     let accounts: Vec<AccountSummary> = sqlx::query_as(
         "SELECT c.public_id AS id, c.name, c.currency,
             c.opening_balance::float8 AS opening_balance,
@@ -123,7 +144,13 @@ pub async fn build_snapshot(
             + COALESCE(SUM(CASE
                 WHEN m.currency = c.currency AND m.is_income THEN m.amount::float8
                 WHEN m.currency = c.currency THEN -m.amount::float8
-                ELSE 0 END), 0) AS balance
+                ELSE 0 END), 0)
+            - COALESCE((
+                SELECT SUM(t.from_amount::float8) FROM transfers t
+                WHERE t.from_account_id = c.id), 0)
+            + COALESCE((
+                SELECT SUM(t.to_amount::float8) FROM transfers t
+                WHERE t.to_account_id = c.id), 0) AS balance
         FROM accounts c
         LEFT JOIN transactions m ON m.account_id = c.id
         WHERE c.user_id = $1
@@ -166,6 +193,27 @@ pub async fn build_snapshot(
     .fetch_all(&mut *conn)
     .await?;
 
+    let transfers: Vec<TransferSummary> = sqlx::query_as(
+        "SELECT t.public_id AS id, to_char(t.entry_date, 'YYYY-MM-DD') AS entry_date,
+            fa.name AS from_account, fa.public_id AS from_account_id,
+            ta.name AS to_account, ta.public_id AS to_account_id,
+            t.from_amount::float8 AS from_amount, t.from_currency,
+            t.to_amount::float8 AS to_amount, t.to_currency, t.description
+        FROM transfers t
+        JOIN accounts fa ON fa.id = t.from_account_id
+        JOIN accounts ta ON ta.id = t.to_account_id
+        WHERE t.user_id = $1
+            AND t.entry_date >= $2::date AND t.entry_date < $3::date
+        ORDER BY t.entry_date DESC, t.id DESC
+        LIMIT $4",
+    )
+    .bind(user_id)
+    .bind(&desde)
+    .bind(&hasta)
+    .bind(MAX_SNAPSHOT_TRANSACTIONS)
+    .fetch_all(&mut *conn)
+    .await?;
+
     let recurrences: Vec<RecurrenceSummary> = sqlx::query_as(
         "SELECT public_id AS id, installment_count, installments_generated AS generated
         FROM recurrences WHERE user_id = $1 AND is_active ORDER BY public_id",
@@ -182,6 +230,7 @@ pub async fn build_snapshot(
         accounts,
         categories,
         transactions,
+        transfers,
         recurrences,
     })
 }

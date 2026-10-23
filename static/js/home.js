@@ -78,6 +78,7 @@
 	var undoTimers = {};
 	var sortState = { key: 'entry_date', dir: -1 };
 	var editingTransactionId = null;
+	var editingTransferId = null;
 	var editingIsRecurring = false; // la fila en edición pertenece a una recurrencia
 	var editingAccountId = null;
 	var editingCategoryId = null;
@@ -170,13 +171,14 @@
 
 	// ---------- flujo del mes visto ----------
 
-	// Gastos, ingresos y saldo (ingresos − gastos) del mes visto, por
-	// moneda. Los asientos en ventana DESHACER no entran, igual que en
-	// las barras de presupuesto.
+	// Flujo del mes visto por moneda. Se separan asientos (income/expense)
+	// de patas de transferencia (received/sent); renderMonthFlow las combina:
+	// gastos = egresos + enviadas, ingresos = ingresos + recibidas. Los
+	// anulados (ventana DESHACER) no entran, igual que en las barras.
 	function monthFlow() {
 		var flow = {
-			ARS: { income: 0, expense: 0 },
-			USD: { income: 0, expense: 0 },
+			ARS: { income: 0, expense: 0, received: 0, sent: 0 },
+			USD: { income: 0, expense: 0, received: 0, sent: 0 },
 		};
 		for (var i = 0; i < snapshot.transactions.length; i++) {
 			var m = snapshot.transactions[i];
@@ -184,6 +186,13 @@
 			if (!flow[m.currency]) continue;
 			if (m.value < 0) flow[m.currency].expense += -m.value;
 			else flow[m.currency].income += m.value;
+		}
+		var transfers = snapshot.transfers || [];
+		for (var j = 0; j < transfers.length; j++) {
+			var t = transfers[j];
+			if (pendingUndos[t.id] || !isViewedMonth(t.entry_date)) continue;
+			if (flow[t.from_currency]) flow[t.from_currency].sent += t.from_amount;
+			if (flow[t.to_currency]) flow[t.to_currency].received += t.to_amount;
 		}
 		return flow;
 	}
@@ -196,17 +205,25 @@
 		var ids = { ARS: 'monthFlowArs', USD: 'monthFlowUsd' };
 		for (var cur in ids) {
 			var f = flow[cur];
-			var net = f.income - f.expense;
+			// Gastos e ingresos incluyen las patas de transferencia: una
+			// salida de esa moneda o una entrada a esa moneda. Así las tres
+			// celdas siempre cumplen INGRESOS − GASTOS = PARA AHORRAR.
+			var income = f.income + f.received;
+			var expense = f.expense + f.sent;
+			var net = income - expense;
 			var line = $(ids[cur]);
-			line.textContent = 'MES ' + monthName + ' · ING ' + fmt(f.income, cur) +
-				' · GAS −' + fmt(f.expense, cur) + ' · ';
-			line.appendChild(el('b', net < 0 ? 'is-deficit' : null,
-				(net < 0 ? 'FALTAN ' : 'AHORRO ') + fmt(Math.abs(net), cur)));
+			line.textContent = 'MES ' + monthName + ' · ING ' + fmt(income, cur) +
+				' · GAS −' + fmt(expense, cur) + ' · ';
+			var tag = el('b', net < 0 ? 'is-deficit' : null,
+				(net < 0 ? 'FALTAN ' : 'AHORRO ') + fmt(Math.abs(net), cur));
+			tag.title = 'Incluye transferencias recibidas y enviadas en ' + cur;
+			line.appendChild(tag);
 
-			$('summaryExpense' + cur).textContent = fmt(f.expense, cur);
-			$('summaryIncome' + cur).textContent = fmt(f.income, cur);
+			$('summaryExpense' + cur).textContent = fmt(expense, cur);
+			$('summaryIncome' + cur).textContent = fmt(income, cur);
 			var saving = $('summarySaving' + cur);
 			saving.textContent = (net < 0 ? 'FALTAN ' : '') + fmt(Math.abs(net), cur);
+			saving.title = 'Incluye transferencias recibidas y enviadas en ' + cur;
 			saving.classList.toggle('is-deficit', net < 0);
 		}
 	}
@@ -414,6 +431,19 @@
 		return cmp * sortState.dir;
 	}
 
+	function ledgerEntry(kind, item) {
+		return {
+			kind: kind,
+			id: item.id,
+			entry_date: item.entry_date,
+			category: kind === 'transfer' ? 'TRANSFERENCIA' : item.category,
+			account: kind === 'transfer' ? (item.from_account + ' → ' + item.to_account) : item.account,
+			value: kind === 'transfer' ? item.from_amount : item.value,
+			description: item.description,
+			source: item,
+		};
+	}
+
 	function renderLedger(newIds) {
 		newIds = newIds || {};
 		var body = $('ledgerBody');
@@ -429,20 +459,32 @@
 			var ok = (!currency || m.currency === currency) &&
 				(!category || m.category === category) &&
 				(!description || m.description.toLowerCase().includes(description));
-			if (ok) rows.push(m);
+			if (ok) rows.push(ledgerEntry('transaction', m));
+		}
+		var transfers = snapshot.transfers || [];
+		for (var t = 0; t < transfers.length; t++) {
+			var tf = transfers[t];
+			if (!isViewedMonth(tf.entry_date)) continue;
+			var currencyOk = !currency || tf.from_currency === currency || tf.to_currency === currency;
+			var descriptionOk = !description || tf.description.toLowerCase().includes(description);
+			// Una transferencia no tiene categoría: el filtro por categoría la deja afuera.
+			if (currencyOk && !category && descriptionOk) rows.push(ledgerEntry('transfer', tf));
 		}
 		rows.sort(compare);
 
 		for (var j = 0; j < rows.length; j++) {
-			body.appendChild(ledgerRow(rows[j], newIds[rows[j].id]));
+			var entry = rows[j];
+			body.appendChild(entry.kind === 'transfer'
+				? transferRow(entry.source, newIds[entry.id])
+				: ledgerRow(entry.source, newIds[entry.id]));
 		}
 
-		var sinAsientos = snapshot.transactions.length === 0;
-		$('ledgerEmptyText').textContent = sinAsientos
+		var sinMovimientos = snapshot.transactions.length === 0 && transfers.length === 0;
+		$('ledgerEmptyText').textContent = sinMovimientos
 			? 'EL LIBRO ESTÁ VACÍO · ANOTA TU PRIMER ASIENTO ARRIBA'
-			: 'SIN ASIENTOS EN ESTE MES · NAVEGA OTRO MES O ANOTA ARRIBA';
+			: 'SIN MOVIMIENTOS EN ESTE MES · NAVEGA OTRO MES O ANOTA ARRIBA';
 		$('ledgerEmpty').hidden = rows.length !== 0;
-		$('ledgerCount').textContent = rows.length + (rows.length === 1 ? ' ASIENTO' : ' ASIENTOS');
+		$('ledgerCount').textContent = rows.length + (rows.length === 1 ? ' MOVIMIENTO' : ' MOVIMIENTOS');
 	}
 
 	function ledgerRow(m, isNew) {
@@ -487,6 +529,45 @@
 		return tr;
 	}
 
+	function transferRow(t, isNew) {
+		var isVoided = !!pendingUndos[t.id];
+		var tr = el('tr', 'transaction row-transfer' + (isVoided ? ' row-void' : '') + (isNew ? ' row-new' : ''));
+		var scheduled = isScheduled(t.entry_date);
+		if (scheduled) tr.classList.add('row-scheduled');
+
+		tr.appendChild(cell('cell-date', shortDate(t.entry_date) + (scheduled ? ' · PRÓX.' : '')));
+		tr.appendChild(cell('cell-category transfer-category', 'TRANSFERENCIA'));
+		tr.appendChild(cell('cell-account transfer-account-cell', t.from_account + ' → ' + t.to_account));
+
+		var tdC = el('td', 'cell-description');
+		tdC.appendChild(document.createTextNode(t.description));
+		if (isNew && !reduceMotion && !isVoided) {
+			var sticker = el('span', 'stamp', 'ANOTADO');
+			sticker.setAttribute('aria-hidden', 'true');
+			tdC.appendChild(sticker);
+		}
+		tr.appendChild(tdC);
+
+		var tdM = el('td', 'cell-amount transfer-amount');
+		tdM.appendChild(el('span', null, '−' + fmt(t.from_amount, t.from_currency) + ' ' + t.from_currency));
+		tdM.appendChild(el('span', 'transfer-arrow', ' → '));
+		tdM.appendChild(el('span', null, '+' + fmt(t.to_amount, t.to_currency) + ' ' + t.to_currency));
+		if (t.from_currency !== t.to_currency) {
+			tdM.appendChild(el('span', 'transfer-rate', ' · TASA ' + nfUSD.format(t.to_amount / t.from_amount)));
+		}
+		tr.appendChild(tdM);
+
+		var tdA = el('td', 'row-actions');
+		if (isVoided) {
+			tdA.appendChild(makeButton('DESHACER', function () { return function () { undo(t.id); }; }, null, 'btn-undo'));
+		} else {
+			tdA.appendChild(makeButton('EDITAR', function (item) { return function () { enterTransferEdit(item); }; }, t));
+			tdA.appendChild(makeButton('BORRAR', function (item) { return function () { deleteTransfer(item); }; }, t, 'btn-mini-danger'));
+		}
+		tr.appendChild(tdA);
+		return tr;
+	}
+
 	function cell(cls, text) {
 		return el('td', cls, text);
 	}
@@ -494,8 +575,19 @@
 	function deleteTransaction(m) {
 		var detail = '«' + m.description + '» (' + shortDate(m.entry_date) + ' · ' + amountText(m.value, m.currency) + ')';
 		if (!window.confirm('¿Borrar el asiento ' + detail + '?')) return;
-		pendingUndos[m.id] = true;
+		pendingUndos[m.id] = 'transaction';
 		undoTimers[m.id] = setTimeout(function () { finalizeDelete(m.id); }, 4000);
+		renderLedger();
+		renderMonthFlow();
+	}
+
+	function deleteTransfer(t) {
+		var detail = '«' + t.description + '» (' + shortDate(t.entry_date) + ' · −' +
+			fmt(t.from_amount, t.from_currency) + ' ' + t.from_currency + ' → +' +
+			fmt(t.to_amount, t.to_currency) + ' ' + t.to_currency + ')';
+		if (!window.confirm('¿Borrar la transferencia ' + detail + '?')) return;
+		pendingUndos[t.id] = 'transfer';
+		undoTimers[t.id] = setTimeout(function () { finalizeDelete(t.id); }, 4000);
 		renderLedger();
 		renderMonthFlow();
 	}
@@ -511,9 +603,14 @@
 	async function finalizeDelete(id) {
 		clearTimeout(undoTimers[id]);
 		delete undoTimers[id];
+		var kind = pendingUndos[id];
 		delete pendingUndos[id];
 		try {
-			await mutate('/api/transactions/' + id, 'DELETE', undefined, 'Asiento borrado.');
+			if (kind === 'transfer') {
+				await mutate('/api/transfers/' + id, 'DELETE', undefined, 'Transferencia borrada.');
+			} else {
+				await mutate('/api/transactions/' + id, 'DELETE', undefined, 'Asiento borrado.');
+			}
 		} catch (e) { /* aviso en pantalla */ }
 	}
 
@@ -685,6 +782,53 @@
 
 	// ---------- captura: alta o modo edición, con recurrencia ----------
 
+	// ---------- captura: modo transferencia ----------
+
+	function currentEntryMode() {
+		return document.querySelector('input[name="entryType"]:checked').value;
+	}
+
+	function accountById(id) {
+		if (!snapshot) return null;
+		for (var i = 0; i < snapshot.accounts.length; i++) {
+			if (String(snapshot.accounts[i].id) === String(id)) return snapshot.accounts[i];
+		}
+		return null;
+	}
+
+	function renderTransferRate() {
+		var from = accountById($('entryFromAccount').value);
+		var to = accountById($('entryToAccount').value);
+		var fromAmount = parseFloat(($('entryFromAmount').value || '').replace(',', '.'));
+		var toAmount = parseFloat(($('entryToAmount').value || '').replace(',', '.'));
+		var line = $('entryTransferRate');
+		if (!from || !to || from.currency === to.currency ||
+			!(fromAmount > 0) || !(toAmount > 0)) {
+			line.hidden = true;
+			line.textContent = '';
+			return;
+		}
+		line.hidden = false;
+		line.textContent = 'TASA · 1 ' + from.currency + ' = ' +
+			nfUSD.format(toAmount / fromAmount) + ' ' + to.currency;
+	}
+
+	function syncTransferFields() {
+		var from = accountById($('entryFromAccount').value);
+		var to = accountById($('entryToAccount').value);
+		var sameCurrency = !!(from && to && from.currency === to.currency);
+		$('entryToAmount').readOnly = sameCurrency;
+		if (sameCurrency) $('entryToAmount').value = $('entryFromAmount').value;
+		renderTransferRate();
+	}
+
+	function syncEntryMode() {
+		var isTransfer = currentEntryMode() === 'transfer';
+		$('entryForm').classList.toggle('is-transfer', isTransfer);
+		$('entryTransfer').hidden = !isTransfer;
+		if (isTransfer) syncTransferFields();
+	}
+
 	function syncSelects() {
 		var accountSel = $('entryAccount');
 		var current = accountSel.value;
@@ -695,6 +839,41 @@
 			accountSel.appendChild(o);
 		}
 		if (current) accountSel.value = current;
+
+		var fromSel = $('entryFromAccount');
+		var toSel = $('entryToAccount');
+		var fromCurrent = fromSel.value;
+		var toCurrent = toSel.value;
+		fromSel.innerHTML = '';
+		toSel.innerHTML = '';
+		for (var a = 0; a < snapshot.accounts.length; a++) {
+			var acc = snapshot.accounts[a];
+			var of = el('option', null, acc.name + ' · ' + acc.currency);
+			of.value = String(acc.id);
+			fromSel.appendChild(of);
+			var ot = el('option', null, acc.name + ' · ' + acc.currency);
+			ot.value = String(acc.id);
+			toSel.appendChild(ot);
+		}
+		if (fromCurrent) fromSel.value = fromCurrent;
+		if (toCurrent) {
+			toSel.value = toCurrent;
+		} else if (snapshot.accounts.length > 1) {
+			// Destino por defecto: una cuenta de otra moneda si existe; si no,
+			// la primera distinta del origen.
+			var fromAcc = accountById(fromSel.value);
+			var fallback = null;
+			for (var b = 0; b < snapshot.accounts.length; b++) {
+				var candidate = String(snapshot.accounts[b].id);
+				if (candidate === String(fromSel.value)) continue;
+				if (!fallback) fallback = candidate;
+				if (fromAcc && snapshot.accounts[b].currency !== fromAcc.currency) {
+					fallback = candidate;
+					break;
+				}
+			}
+			if (fallback) toSel.value = fallback;
+		}
 
 		var catSel = $('entryCategory');
 		var fSel = $('filterCategory');
@@ -732,10 +911,16 @@
 		renderCards();
 		renderMonthNav();
 		syncSelects();
+		syncEntryMode();
 	}
 
 	$('entryForm').addEventListener('submit', async function (e) {
 		e.preventDefault();
+
+		if (currentEntryMode() === 'transfer') {
+			await submitTransfer();
+			return;
+		}
 
 		var entry_date = $('entryDate').value;
 		var amount = parseFloat(($('entryAmount').value || '').replace(',', '.'));
@@ -816,6 +1001,81 @@
 		}
 	});
 
+	async function submitTransfer() {
+		var entry_date = $('entryDate').value;
+		var description = $('entryDescription').value.trim();
+		var fromId = $('entryFromAccount').value;
+		var toId = $('entryToAccount').value;
+		var fromAmount = parseFloat(($('entryFromAmount').value || '').replace(',', '.'));
+		var toAmount = parseFloat(($('entryToAmount').value || '').replace(',', '.'));
+		var from = accountById(fromId);
+		var to = accountById(toId);
+		var wasEditing = editingTransferId !== null;
+
+		if (!entry_date || !description) {
+			showNotice('Falta fecha o concepto. Corrige y anota de nuevo.', 'notice-danger');
+			return;
+		}
+		if (!fromId || !toId) {
+			showNotice('Elegí cuenta de origen y cuenta de destino.', 'notice-danger');
+			return;
+		}
+		if (fromId === toId) {
+			showNotice('Las cuentas de origen y destino deben ser distintas.', 'notice-danger');
+			return;
+		}
+		if (!(fromAmount > 0) || !(toAmount > 0)) {
+			showNotice('Los montos enviado y recibido deben ser mayores que cero.', 'notice-danger');
+			return;
+		}
+		// Misma moneda: el backend exige montos iguales; el form ya los copia.
+		if (from && to && from.currency === to.currency) toAmount = fromAmount;
+
+		var body = {
+			entry_date: entry_date,
+			from_account_id: fromId,
+			to_account_id: toId,
+			from_amount: fromAmount,
+			to_amount: toAmount,
+			description: description,
+		};
+		try {
+			var r;
+			if (wasEditing) {
+				r = await request('/api/transfers/' + editingTransferId, {
+					method: 'PATCH',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(body),
+				});
+			} else {
+				r = await request('/api/transfers', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(body),
+				});
+			}
+			if (!r.ok) {
+				showNotice((await r.text()) || 'No se pudo guardar la transferencia', 'notice-danger');
+				return;
+			}
+			var data = await r.json().catch(function () { return {}; });
+			var newIds = {};
+			if (data.id) newIds[data.id] = true;
+			await loadSnapshot();
+			renderAll(newIds);
+			resetEntryForm();
+			showNotice(
+				wasEditing
+					? 'Transferencia guardada.'
+					: 'Transferencia anotada: −' + fmt(body.from_amount, from ? from.currency : 'ARS') +
+						' → +' + fmt(body.to_amount, to ? to.currency : 'ARS') + '.',
+				'notice-success'
+			);
+		} catch (err) {
+			showNotice('Error de conexión con el servidor. Intenta de nuevo.', 'notice-danger');
+		}
+	}
+
 	function resetEntryForm() {
 		$('entryTitle').textContent = 'ANOTAR EN EL LIBRO';
 		$('entrySubmit').textContent = 'REGISTRAR';
@@ -823,20 +1083,45 @@
 		$('entryForm').classList.remove('is-editing');
 		$('entryForm').reset();
 		editingIsRecurring = false;
+		editingTransferId = null;
 		$('entryScope').classList.remove('is-scope-on');
 		$('entryRecurring').disabled = false;
 		$('entryInstallments').disabled = false;
 		$('entryDate').value = snapshot.today;
 		syncRecurringRow();
+		syncEntryMode();
+	}
+
+	function enterTransferEdit(t) {
+		editingTransferId = t.id;
+		editingTransactionId = null;
+		editingIsRecurring = false;
+		$('entryTitle').textContent = 'EDITAR TRANSFERENCIA';
+		$('entryDate').value = t.entry_date;
+		$('entryDescription').value = t.description;
+		document.querySelector('input[name="entryType"][value="transfer"]').checked = true;
+		syncEntryMode();
+		syncSelects();
+		$('entryFromAccount').value = String(t.from_account_id);
+		$('entryToAccount').value = String(t.to_account_id);
+		$('entryFromAmount').value = String(t.from_amount);
+		$('entryToAmount').value = String(t.to_amount);
+		syncTransferFields();
+		$('entrySubmit').textContent = 'GUARDAR';
+		$('entryCancel').hidden = false;
+		$('entryForm').classList.add('is-editing');
+		$('entryFromAmount').focus();
 	}
 
 	function enterTransactionEdit(m) {
 		editingTransactionId = m.id;
+		editingTransferId = null;
 		$('entryTitle').textContent = 'EDITAR ASIENTO';
 		$('entryDate').value = m.entry_date;
 		$('entryAmount').value = String(Math.abs(m.value));
 		$('entryCurrency').value = m.currency;
 		document.querySelector('input[name="entryType"][value="' + (m.value < 0 ? 'expense' : 'income') + '"]').checked = true;
+		syncEntryMode();
 		syncSelects();
 		$('entryAccount').value = String(m.account_id);
 		$('entryCategory').value = m.category_id === null ? '' : String(m.category_id);
@@ -860,8 +1145,19 @@
 
 	$('entryCancel').addEventListener('click', function () {
 		editingTransactionId = null;
+		editingTransferId = null;
 		resetEntryForm();
 	});
+
+	// Modo transferencia: radios de tipo, cuentas y montos.
+	var entryTypeRadios = document.querySelectorAll('input[name="entryType"]');
+	for (var et = 0; et < entryTypeRadios.length; et++) {
+		entryTypeRadios[et].addEventListener('change', syncEntryMode);
+	}
+	$('entryFromAccount').addEventListener('change', syncTransferFields);
+	$('entryToAccount').addEventListener('change', syncTransferFields);
+	$('entryFromAmount').addEventListener('input', syncTransferFields);
+	$('entryToAmount').addEventListener('input', renderTransferRate);
 
 	$('entryRecurring').addEventListener('change', syncRecurringRow);
 

@@ -297,7 +297,7 @@
 .entry-date { width: 158px; }
 .entry-amount { width: 130px; }
 .entry-currency { width: 96px; }
-.entry-type { width: 190px; }
+.entry-type { width: 360px; }
 .entry-account { width: 170px; }
 .entry-category { width: 160px; }
 .entry-description { flex: 1 1 220px; min-width: 200px; }
@@ -305,6 +305,46 @@
 .entry-field select.field {
 	width: 100%;
 	text-overflow: ellipsis;
+}
+
+/* Modo transferencia: reemplaza cuenta/monto/divisa/categoría del asiento */
+.entry-transfer {
+	flex-basis: 100%;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: flex-end;
+	gap: 6px 16px;
+	padding-top: 2px;
+}
+
+.entry-transfer[hidden] {
+	display: none;
+}
+
+.transfer-account { width: 200px; }
+.transfer-amount-field { width: 140px; }
+
+.transfer-account select.field {
+	width: 100%;
+	text-overflow: ellipsis;
+}
+
+.entry-transfer-rate {
+	flex: 1 1 100%;
+	margin-top: 2px;
+	color: var(--tinta-2);
+	font-size: 0.7rem;
+	letter-spacing: 0.04em;
+}
+
+.entry-form.is-transfer > .entry-amount,
+.entry-form.is-transfer > .entry-currency,
+.entry-form.is-transfer > .entry-account,
+.entry-form.is-transfer > .entry-category,
+.entry-form.is-transfer > .entry-recurring,
+.entry-form.is-transfer > .entry-recurring-row,
+.entry-form.is-transfer > .entry-scope {
+	display: none;
 }
 
 .type-options {
@@ -713,6 +753,14 @@ table.ledger td:has(.amount) {
 	padding: 0 4px;
 }
 
+.summary-note {
+	grid-column: 1 / -1;
+	margin: -6px 0 0;
+	color: var(--tinta-2);
+	font-size: 0.62rem;
+	letter-spacing: 0.04em;
+}
+
 .budget {
 	list-style: none;
 	display: grid;
@@ -1016,6 +1064,33 @@ table.ledger td:has(.amount) {
 	margin-right: 8px;
 }
 
+/* Transferencias: movimiento propio, ni gasto ni ingreso */
+.cell-category.transfer-category {
+	color: var(--tinta-2);
+	font-size: 0.72rem;
+	letter-spacing: 0.04em;
+}
+
+.cell-amount.transfer-amount {
+	white-space: normal;
+	font-size: 0.78rem;
+	font-weight: 500;
+}
+
+.transfer-amount .transfer-arrow {
+	color: var(--tinta-2);
+}
+
+.transfer-amount .transfer-rate {
+	color: var(--tinta-2);
+	font-weight: 400;
+	font-size: 0.7rem;
+}
+
+.cell-account.transfer-account-cell {
+	white-space: normal;
+}
+
 .row-scheduled .cell-date,
 .row-scheduled .cell-account {
 	color: var(--tinta-2);
@@ -1266,6 +1341,12 @@ table.ledger td:has(.amount) {
 		order: -1;
 	}
 
+	.entry-type,
+	.transfer-account,
+	.transfer-amount-field {
+		width: 100%;
+	}
+
 	.accounts {
 		grid-template-columns: 1fr;
 	}
@@ -1324,6 +1405,11 @@ table.ledger td:has(.amount) {
 	.cell-amount {
 		grid-area: amount;
 		font-size: 1rem;
+	}
+
+	.cell-amount.transfer-amount {
+		font-size: 0.78rem;
+		max-width: 58vw;
 	}
 
 	td.cell-description {

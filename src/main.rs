@@ -11,7 +11,8 @@ use dotenvy::dotenv;
 use routes::api::{
     account_create, account_delete, account_update, api_login, api_logout, api_recurrence_delete,
     api_register, api_snapshot, category_create, category_delete, category_update,
-    transaction_create, transaction_delete, transaction_update,
+    transaction_create, transaction_delete, transaction_update, transfer_create, transfer_delete,
+    transfer_update,
 };
 use routes::web::{admin_handler, index_handler, login_handler, register_handler};
 use sqlx::PgPool;
@@ -185,6 +186,9 @@ async fn main() -> std::io::Result<()> {
             .service(transaction_create)
             .service(transaction_update)
             .service(transaction_delete)
+            .service(transfer_create)
+            .service(transfer_update)
+            .service(transfer_delete)
             .service(api_recurrence_delete)
             // Sin show_files_listing: el listing regala el inventario de
             // /css y /js y no suma nada.

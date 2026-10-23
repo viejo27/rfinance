@@ -75,7 +75,8 @@ There are no automated tests in the repository yet. When adding some, prefer
   mando=overview, captura=entry, aviso=notice, rótulo=mini-label, celda=cell,
   fila=row, anulado=void, programado=scheduled, alcance=scope,
   saldo_inicial=opening_balance, limite=budget_limit, categoria_txt=category_label,
-  es_ingreso=is_income, creada_en/creado_en=created_at.
+  es_ingreso=is_income, creada_en/creado_en=created_at, transferencia=transfer,
+  pata=leg, tasa=rate, cuenta_origen=from_account, cuenta_destino=to_account.
 - Never introduce a migration, column, class, id or identifier with a
   Spanish name; if you find a legacy one, rename it in a dedicated change.
 

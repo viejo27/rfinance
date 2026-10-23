@@ -87,7 +87,30 @@
 									<input type="radio" name="entryType" value="expense" checked>
 									<span>EGRESO</span>
 								</label>
+								<label class="type-option">
+									<input type="radio" name="entryType" value="transfer">
+									<span>TRANSFERENCIA</span>
+								</label>
 							</div>
+						</div>
+						<div class="entry-transfer" id="entryTransfer" hidden>
+							<div class="transfer-account">
+								<label class="field-label mini-label" for="entryFromAccount">CUENTA ORIGEN</label>
+								<select class="field" id="entryFromAccount"></select>
+							</div>
+							<div class="transfer-account">
+								<label class="field-label mini-label" for="entryToAccount">CUENTA DESTINO</label>
+								<select class="field" id="entryToAccount"></select>
+							</div>
+							<div class="transfer-amount-field">
+								<label class="field-label mini-label" for="entryFromAmount">MONTO ENVIADO</label>
+								<input class="field" type="number" id="entryFromAmount" min="0.01" step="0.01" inputmode="decimal" placeholder="0,00">
+							</div>
+							<div class="transfer-amount-field">
+								<label class="field-label mini-label" for="entryToAmount">MONTO RECIBIDO</label>
+								<input class="field" type="number" id="entryToAmount" min="0.01" step="0.01" inputmode="decimal" placeholder="0,00">
+							</div>
+							<div class="transfer-rate mini-label figure" id="entryTransferRate" hidden></div>
 						</div>
 						<div class="entry-account">
 							<label class="field-label mini-label" for="entryAccount">CUENTA</label>
@@ -260,6 +283,7 @@
 							</div>
 						</div>
 					</div>
+					<p class="summary-note mini-label">GASTOS E INGRESOS INCLUYEN TRANSFERENCIAS · AHORRO = INGRESOS − GASTOS</p>
 				</div>
 
 				<ul class="budget" id="budgetList"></ul>

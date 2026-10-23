@@ -59,7 +59,7 @@ fn is_valid_currency(currency: &str) -> bool {
 /// y año dentro del rango razonable del libro. Los .get() cortan por bytes
 /// sin verse tentados a un slice en medio de un carácter multibyte, que
 /// antes panicaba ("2026-12-éé").
-fn is_valid_date(entry_date: &str) -> bool {
+pub(crate) fn is_valid_date(entry_date: &str) -> bool {
     if entry_date.len() != 10 {
         return false;
     }
