@@ -74,7 +74,10 @@ nginx, ajustar `server_name`/certificados y el include de params.
   cookie de sesión).
 - [ ] `SESSION_KEY` real generada con `openssl rand -hex 32`: ninguna
   instalación debería correr con la de ejemplo.
-- [ ] TLS en el proxy, app solo en `127.0.0.1:8080` (el bind de `main.rs`).
+- [ ] TLS en el proxy, app en loopback (default de `BIND_ADDR`,
+  `127.0.0.1:8080`). Abrir `BIND_ADDR=0.0.0.0:8080` sin TLS es solo para
+  pruebas en red de confianza: los cookies de sesión son replayables si se
+  sniffean.
 - [ ] Nginx seteando `X-Real-IP` (`deploy/rfinance_proxy_params.example.conf`).
 - [ ] Logs del proceso enviados a un lugar conservado (off-host idealmente):
   access logs (`Logger`) y líneas `AUDIT` de mutaciones financieras.

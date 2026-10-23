@@ -43,6 +43,12 @@
 	color: var(--rojo-grafico);
 }
 
+/* El item de grilla del shell es <nav>, no el <ul>: el wrapper necesita
+   min-width: 0 para que el UL scrollee en vez de desbordar el header. */
+.shell-inner > nav {
+	min-width: 0;
+}
+
 .section-nav {
 	display: flex;
 	gap: 4px;
@@ -1152,9 +1158,16 @@ table.ledger td:has(.amount) {
 		gap: 10px;
 	}
 
-	.section-nav {
+	/* El grid item real es <nav>: brand y SALIR en la fila 1, la nav a
+	   todo el ancho en la fila 2 (las reglas viejas en .section-nav eran
+	   inertes: el <ul> no participa del grid y desbordaba la página). */
+	.shell-inner > nav {
 		grid-column: 1 / -1;
 		order: 3;
+		min-width: 0;
+	}
+
+	.section-nav {
 		padding-bottom: 4px;
 		-webkit-mask-image: linear-gradient(90deg, #000 88%, transparent);
 		mask-image: linear-gradient(90deg, #000 88%, transparent);

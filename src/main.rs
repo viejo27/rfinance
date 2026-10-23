@@ -102,6 +102,14 @@ async fn main() -> std::io::Result<()> {
     let session_key = Key::from(session_key_str.as_bytes());
     let is_production = env::var("APP_ENV").unwrap_or_default() == "production";
 
+    // Dirección de escucha: loopback por defecto (el proxy/uso local es la
+    // norma). Para LAN se setea BIND_ADDR=0.0.0.0:8080; sin TLS eso deja
+    // sesiones replayables en la red (ver SECURITY.md), solo red de confianza.
+    let bind_addr = env::var("BIND_ADDR").unwrap_or_else(|_| "127.0.0.1:8080".to_string());
+    if bind_addr.parse::<std::net::SocketAddr>().is_err() {
+        panic!("BIND_ADDR inválida ({bind_addr:?}): usá formato IP:PUERTO, p. ej. 127.0.0.1:8080");
+    }
+
     // Rate limit de los endpoints anónimos más sensibles, por IP real
     // (X-Real-IP que setea el proxy): 5 logins y 3 registros por minuto,
     // con burst cobrado de entrada. Esta es la capa in-app; el proxy suma
@@ -187,7 +195,7 @@ async fn main() -> std::io::Result<()> {
             .service(favicon_ico)
             .service(favicon_png)
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind(bind_addr.as_str())?
     .run()
     .await
 }

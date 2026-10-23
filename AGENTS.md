@@ -42,7 +42,7 @@ its schema change.
 cargo build              # debug build (requires DATABASE_URL reachable)
 cargo build --release    # release build
 
-# Run (listens on 127.0.0.1:8080)
+# Run (listens on BIND_ADDR, default 127.0.0.1:8080)
 cargo run
 
 # Tests
@@ -253,6 +253,9 @@ rfinance_app/
 
 `.env` file requires (copy from `.env.example`):
 - `DATABASE_URL`: PostgreSQL connection string
+- `BIND_ADDR`: listen address as `IP:PORT`, default `127.0.0.1:8080`.
+  `0.0.0.0:8080` exposes the app to the LAN over plain HTTP (no TLS): trusted
+  networks only, session cookies are replayable if sniffed (see `SECURITY.md`)
 - `ADMIN_USER`: email of the account `ensure_admin_user` creates and promotes
 - `ADMIN_PASSWORD`: password for that account, only used when creating it
 - `SESSION_KEY`: at least 32 raw bytes, used to encrypt and sign the session
