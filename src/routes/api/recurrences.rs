@@ -55,8 +55,9 @@ const MAX_INSERTS_PER_CALL: i64 = 120;
 /// Materializa los asientos futuros que falten para cada recurrencia
 /// activa del usuario. Idempotente: el cursor es cuotas_generadas.
 ///
-/// - Indefinida (cuotas NULL): genera los meses restantes del año
-///   calendario en curso; el año siguiente rueda solo.
+/// - Indefinida (cuotas NULL): mantiene una ventana rodante del mes en
+///   curso más 12 meses hacia adelante; al cambiar el mes, la ventana
+///   avanza y los asientos nuevos se materializan en la siguiente carga.
 /// - Con cuotas: genera hasta agotar la cantidad total, cruzando años.
 pub async fn materialize(
     conn: &mut sqlx::PgConnection,
@@ -73,12 +74,11 @@ pub async fn materialize(
     .fetch_all(&mut *conn)
     .await?;
 
-    let current_year: i64 = today_iso[0..4].parse().unwrap_or(2026);
+    let today_index = date::month_index(today_iso).unwrap_or(2026 * 12);
+    let horizon = today_index + date::VISIBLE_MONTHS_AHEAD;
 
     for r in &recurrences {
-        let start_year: i64 = r.start_date[0..4].parse().unwrap_or(current_year);
-        let start_month: i64 = r.start_date[5..7].parse().unwrap_or(1);
-        let base = start_year * 12 + (start_month - 1);
+        let base = date::month_index(&r.start_date).unwrap_or(today_index);
         let source_day = i64::from(r.day_of_month);
 
         let mut inserted: i64 = 0;
@@ -93,7 +93,7 @@ pub async fn materialize(
             let target = base + (k - 1);
             let year = target / 12;
             let month = target % 12 + 1;
-            if r.installment_count.is_none() && year > current_year {
+            if r.installment_count.is_none() && target > horizon {
                 break;
             }
             let day_of_month = source_day.min(last_day_of_month(year, month));
@@ -311,7 +311,7 @@ mod tests {
     }
 
     #[async_std::test]
-    async fn open_ended_generates_until_year_end() {
+    async fn open_ended_keeps_rolling_twelve_month_window() {
         let mut conn = connect().await;
         let mut tx = conn.begin().await.expect("tx");
         let user = make_user(&mut tx).await;
@@ -321,16 +321,23 @@ mod tests {
             .await
             .expect("materializar");
 
-        // OCT (origen) + NOV + DIC del año calendario 2026, y nada más
-        assert_eq!(count_for_recurrence(&mut tx, recurrence).await, 3);
-        assert_eq!(generated_for(&mut tx, recurrence).await, 3);
+        // OCT (origen) + NOV 2026 a OCT 2027: ventana rodante de 12 meses
+        assert_eq!(count_for_recurrence(&mut tx, recurrence).await, 13);
+        assert_eq!(generated_for(&mut tx, recurrence).await, 13);
 
-        // idempotente: otra llamada en el mismo año no agrega nada
-        materialize(&mut tx, user, "2026-11-20")
+        // idempotente: la misma fecha no agrega nada
+        materialize(&mut tx, user, "2026-10-15")
             .await
             .expect("idempotente");
-        assert_eq!(count_for_recurrence(&mut tx, recurrence).await, 3);
-        assert_eq!(generated_for(&mut tx, recurrence).await, 3);
+        assert_eq!(count_for_recurrence(&mut tx, recurrence).await, 13);
+        assert_eq!(generated_for(&mut tx, recurrence).await, 13);
+
+        // al cambiar el mes, la ventana avanza y agrega el mes nuevo
+        materialize(&mut tx, user, "2026-11-20")
+            .await
+            .expect("ventana rodante");
+        assert_eq!(count_for_recurrence(&mut tx, recurrence).await, 14);
+        assert_eq!(generated_for(&mut tx, recurrence).await, 14);
 
         tx.rollback().await.expect("rollback");
     }

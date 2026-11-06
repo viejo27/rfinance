@@ -373,9 +373,13 @@
 		var month = Number(parts[1]);
 		var year = Number(parts[0]);
 		$('monthViewed').textContent = MONTHS_LONG[month - 1] + ' ' + year;
-		var esHoy = viewedMonth === monthIso(snapshot.year, snapshot.month);
+		var esHoy = viewedMonth === snapshot.today.slice(0, 7);
 		$('monthToday').hidden = esHoy;
 		$('budgetMonth').hidden = esHoy;
+		var atLimit = viewedMonth >= snapshot.last_view_month;
+		$('monthNext').disabled = atLimit;
+		$('monthNext').title = atLimit ? 'Máximo 12 meses hacia adelante' : 'Mes siguiente';
+		$('monthNext').setAttribute('aria-label', atLimit ? 'Máximo 12 meses hacia adelante' : 'Mes siguiente');
 		if (!esHoy) $('budgetMonth').textContent = 'MES VISTO: ' + MONTHS[month - 1] + ' ' + year;
 	}
 
@@ -409,7 +413,10 @@
 		var total = Number(parts[0]) * 12 + Number(parts[1]) - 1 + delta;
 		var targetYear = Math.floor(total / 12);
 		if (targetYear < 2000 || targetYear > 2100) return;
-		goToMonth(monthIso(targetYear, (total % 12 + 1)));
+		var target = monthIso(targetYear, (total % 12 + 1));
+		// El servidor materializa hasta hoy + 12 meses; más allá el libro vacío.
+		if (target > snapshot.last_view_month) return;
+		goToMonth(target);
 	}
 
 	$('monthToday').addEventListener('click', function () {
@@ -1134,7 +1141,7 @@
 		$('entryScope').classList.toggle('is-scope-on', editingIsRecurring);
 		document.querySelector('input[name="entryScope"][value="single"]').checked = true;
 		$('entryRecurring').checked = !!recurrence;
-		$('entryInstallments').value = recurrence && recurrence.installments !== null ? String(recurrence.installments) : '';
+		$('entryInstallments').value = recurrence && recurrence.installment_count !== null ? String(recurrence.installment_count) : '';
 		syncRecurringRow();
 		syncScopeControls();
 		$('entrySubmit').textContent = 'GUARDAR';

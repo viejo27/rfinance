@@ -139,7 +139,9 @@ pub async fn register(body: web::Json<RegisterRequest>, pool: web::Data<PgPool>)
 
 #[cfg(test)]
 mod tests {
-    use super::{MAX_NAME_LENGTH, is_valid_email_format, validate_password};
+    use super::{
+        MAX_NAME_LENGTH, RegisterRequest, is_valid_email_format, validate, validate_password,
+    };
 
     #[test]
     fn email_format_esperado() {
@@ -186,6 +188,19 @@ mod tests {
 
     #[test]
     fn limites_del_nombre() {
-        assert!(MAX_NAME_LENGTH == 100);
+        let mut body = RegisterRequest {
+            email: "persona@example.com".into(),
+            password: "contraseña-segura".into(),
+            name: "a".repeat(MAX_NAME_LENGTH),
+            last_name: "Pérez".into(),
+        };
+        assert!(validate(&body).is_ok());
+
+        body.name = "a".repeat(MAX_NAME_LENGTH + 1);
+        assert!(validate(&body).is_err());
+
+        body.name = "Nombre".into();
+        body.last_name = "a".repeat(MAX_NAME_LENGTH + 1);
+        assert!(validate(&body).is_err());
     }
 }

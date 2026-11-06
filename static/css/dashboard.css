@@ -972,18 +972,23 @@ table.ledger td:has(.amount) {
 	transform: translate(-45%, -50%);
 }
 
-.month-arrow:hover,
-.month-arrow:focus-visible {
+.month-arrow:disabled {
+	opacity: 0.35;
+	cursor: not-allowed;
+}
+
+.month-arrow:not(:disabled):hover,
+.month-arrow:not(:disabled):focus-visible {
 	background: var(--tinta);
 }
 
-.month-arrow:hover.prev::after,
-.month-arrow:focus-visible.prev::after {
+.month-arrow:not(:disabled):hover.prev::after,
+.month-arrow:not(:disabled):focus-visible.prev::after {
 	border-right-color: var(--papel);
 }
 
-.month-arrow:hover.next::after,
-.month-arrow:focus-visible.next::after {
+.month-arrow:not(:disabled):hover.next::after,
+.month-arrow:not(:disabled):focus-visible.next::after {
 	border-left-color: var(--papel);
 }
 

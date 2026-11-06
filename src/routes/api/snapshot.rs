@@ -91,6 +91,8 @@ pub struct Snapshot {
     pub month: i64,
     pub today: String,
     pub cutoff: String,
+    /// Último mes visible del libro (`hoy + VISIBLE_MONTHS_AHEAD`), ISO `YYYY-MM`.
+    pub last_view_month: String,
     pub accounts: Vec<AccountSummary>,
     pub categories: Vec<CategorySummary>,
     pub transactions: Vec<TransactionSummary>,
@@ -134,6 +136,10 @@ pub async fn build_snapshot(
 ) -> sqlx::Result<Snapshot> {
     let (today_iso, cutoff) = date::today();
     let month: i64 = today_iso[5..7].parse().unwrap_or(1);
+    // today_iso siempre es un ISO válido; el fallback solo evita el panic.
+    let last_view_month = date::month_iso(
+        date::month_index(&today_iso).unwrap_or(2026 * 12) + date::VISIBLE_MONTHS_AHEAD,
+    );
 
     // Las transferencias se suman por pata (cada monto en la moneda de su
     // cuenta) con subconsultas escalares: evita fan-out de joins.
@@ -227,6 +233,7 @@ pub async fn build_snapshot(
         month,
         today: today_iso,
         cutoff,
+        last_view_month,
         accounts,
         categories,
         transactions,
