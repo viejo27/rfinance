@@ -37,10 +37,10 @@ document.getElementById('registerForm').addEventListener('submit', async functio
 		});
 
 		if (response.ok) {
-			show('Registro exitoso — puedes iniciar sesión.', false);
+			show('Registro exitoso — revisá tu casilla para verificar el email. Podés iniciar sesión.', false);
 			setTimeout(function () {
 				window.location.href = '/login';
-			}, 900);
+			}, 1400);
 		} else {
 			const errorText = await response.text();
 			show('No se pudo registrar: ' + errorText, true);

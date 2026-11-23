@@ -1,0 +1,13 @@
+{% extends "email/base.html" %}
+{% block title %}{{ headline }} — RFinance{% endblock %}
+{% block content %}
+<p style="margin:0 0 14px;font-family:'Courier New',monospace;font-size:11px;letter-spacing:1px;color:#a82317;">{{ headline }}</p>
+<p style="margin:0 0 14px;">Hola{% if name != "" %} {{ name }}{% endif %}:</p>
+<p style="margin:0 0 20px;">{{ intro }}</p>
+<p style="margin:0 0 22px;">
+<a href="{{ verify_url }}" style="display:inline-block;background-color:#a82317;color:#f6f1e2;text-decoration:none;padding:12px 20px;font-family:'Courier New',monospace;font-size:13px;font-weight:bold;letter-spacing:1px;">VERIFICAR EMAIL</a>
+</p>
+<p style="margin:0 0 14px;font-size:13px;color:#4e463b;">Si el botón no funciona, copiá este enlace en el navegador:<br>
+<a href="{{ verify_url }}" style="color:#a82317;word-break:break-all;">{{ verify_url }}</a></p>
+<p style="margin:0;font-size:13px;color:#4e463b;">El enlace vence en 48 horas. Si no creaste una cuenta en RFinance, ignorá este mensaje.</p>
+{% endblock %}

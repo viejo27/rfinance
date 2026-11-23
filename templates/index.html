@@ -31,6 +31,13 @@
 		</header>
 
 		<main class="frame">
+			{% if !email_verified %}
+			<div class="verify-banner" id="verifyBanner">
+				<span class="verify-banner-text mini-label">EMAIL SIN VERIFICAR · revisá tu casilla y abrí el enlace que te enviamos.</span>
+				<button class="btn btn-danger verify-banner-btn" id="resendVerification" type="button">REENVIAR ENLACE</button>
+				<span class="verify-banner-feedback mini-label" id="resendVerificationMsg" role="status"></span>
+			</div>
+			{% endif %}
 			<div class="margin-band mini-label">
 				<span>CORTE: <b>{{ cutoff }}</b></span>
 				<span>MONEDAS: <b>ARS · USD</b> · SIN CONVERSIÓN</span>

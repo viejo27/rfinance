@@ -31,8 +31,8 @@ pub async fn login(
     pool: web::Data<PgPool>,
     session: Session,
 ) -> impl Responder {
-    let result: Option<(String, i32)> =
-        match sqlx::query_as("SELECT password, id FROM users WHERE email = $1")
+    let result: Option<(String, i32, i32)> =
+        match sqlx::query_as("SELECT password, id, session_epoch FROM users WHERE email = $1")
             .bind(&body.email)
             .fetch_optional(pool.get_ref())
             .await
@@ -42,10 +42,11 @@ pub async fn login(
         };
 
     match result {
-        Some((hashed_password, user_id)) => {
+        Some((hashed_password, user_id, session_epoch)) => {
             if bcrypt::verify(&body.password, &hashed_password).unwrap_or(false) {
                 if session.insert("user_email", &body.email).is_err()
                     || session.insert("user_id", user_id).is_err()
+                    || session.insert("user_epoch", session_epoch).is_err()
                 {
                     return HttpResponse::InternalServerError().body("Error al crear la sesión");
                 }

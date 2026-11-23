@@ -43,6 +43,25 @@ del equipo con `.env`), la única revocación real es rotar:
   revalida el rol contra `user_data` en la base (`src/routes/web/admin.rs`):
   bajar el rol en la DB tiene efecto inmediato para ese endpoint.
 - `ensure_admin_user` re-eleva al email de `ADMIN_USER` en cada arranque.
+- Cada request autenticado valida `users.session_epoch` contra el epoch del
+  cookie (`src/middleware/auth.rs`). Un reset de contraseña sube el epoch y
+  todas las sesiones previas de ese usuario quedan invalidadas en el
+  siguiente request. Logout sigue siendo solo local.
+
+### Correo
+
+- `MAIL_TRANSPORT=smtp` exige TLS: `wrapper` en 465 o `starttls` en 587.
+  `SMTP_TLS=none` se rechaza con `APP_ENV=production`.
+- Los tokens de verificación/reset son 32 bytes aleatorios; en la base queda
+  solo el SHA-256 (`email_tokens.token_hash`). Vencen a las 48 h / 60 min y
+  son de un solo uso.
+- `/api/forgot-password` responde siempre 200 con el mismo texto, aunque el
+  email no exista o falle el envío; además tiene cooldown de 2 minutos por
+  usuario. `/api/resend-verification` tiene cooldown de 5 minutos y exige
+  sesión.
+- El outbox no guarda secretos de autenticación, pero sí el cuerpo del
+  correo (con el token en claro) hasta que se envía: es dato sensible al
+  mismo nivel que la base. No se loguean cuerpos en nivel `info`.
 
 ### Contraseñas
 
@@ -60,6 +79,9 @@ del equipo con `.env`), la única revocación real es rotar:
 |---|---|---|
 | `POST /api/login` | 5/min | 5 |
 | `POST /api/register` | 3/min | 3 |
+| `POST /api/forgot-password` | 3/min | 3 |
+| `POST /api/reset-password` | 5/min | 5 |
+| `POST /api/resend-verification` | 2/min | 2 |
 
 Sin el header `X-Real-IP` desde el proxy, **todo el mundo compartiría la
 misma cubeta** (ver `RealIpKeyExtractor` src/main.rs).
@@ -79,6 +101,13 @@ nginx, ajustar `server_name`/certificados y el include de params.
   pruebas en red de confianza: los cookies de sesión son replayables si se
   sniffean.
 - [ ] Nginx seteando `X-Real-IP` (`deploy/rfinance_proxy_params.example.conf`).
+- [ ] `APP_URL` con la URL pública HTTPS: los enlaces de reset y
+  verificación se arman con esa base.
+- [ ] `MAIL_TRANSPORT=smtp` con TLS (`SMTP_TLS=wrapper`/`starttls`), remitente
+  alineado con SPF/DKIM/DMARC del dominio y `POST /admin/mail-test` probado.
+- [ ] Revisar `email_outbox.status='failed'` después de cada despliegue de
+  correo: un fallo de credenciales deja los avisos en la tabla, no en el log
+  del usuario.
 - [ ] Logs del proceso enviados a un lugar conservado (off-host idealmente):
   access logs (`Logger`) y líneas `AUDIT` de mutaciones financieras.
 - [ ] Backups de PostgreSQL ubicados y con la misma higiene de secretos que
@@ -98,10 +127,11 @@ nginx, ajustar `server_name`/certificados y el include de params.
 
 ## Limitaciones conocidas (aceptadas, ver threat model)
 
-- Logout solo borra la copia local del cookie: **no hay revocación
-  server-side** por sesión (store client-side). El desalojo masivo es la
-  rotación de `SESSION_KEY`. Cambiarlo a un session store server-side es el
-  único escalón estructural que queda abierto.
+- Logout solo borra la copia local del cookie: no hay revocación por sesión
+  individual (store client-side). El reset de contraseña sí invalida todas
+  las sesiones del usuario vía `session_epoch`; el desalojo masivo sigue
+  siendo la rotación de `SESSION_KEY`. Cambiar a un session store
+  server-side es el único escalón estructural que queda abierto.
 - El campo `ip`/`user_agent` de `user_data` existe pero ninguna ruta lo
   escribe: no colectamos ese dato hoy.
 - El mensaje de `/api/register` confirma si un email está registrado

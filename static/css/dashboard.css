@@ -7,6 +7,39 @@
 	padding-bottom: 64px;
 }
 
+/* ---------- Aviso de email sin verificar ---------- */
+
+.verify-banner {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px 20px;
+	flex-wrap: wrap;
+	margin-top: 18px;
+	padding: 12px 16px;
+	background: var(--papel-claro);
+	border: var(--grosor) solid var(--rojo);
+	border-left-width: 8px;
+}
+
+.verify-banner-text {
+	color: var(--tinta-2);
+}
+
+.verify-banner-btn {
+	padding: 8px 14px;
+	font-size: 0.72rem;
+}
+
+.verify-banner-feedback {
+	flex-basis: 100%;
+	color: var(--tinta-2);
+}
+
+.verify-banner-feedback:empty {
+	display: none;
+}
+
 /* ---------- Barra shell ---------- */
 
 .shellbar {

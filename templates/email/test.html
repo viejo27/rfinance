@@ -1,0 +1,7 @@
+{% extends "email/base.html" %}
+{% block title %}Prueba de correo — RFinance{% endblock %}
+{% block content %}
+<p style="margin:0 0 14px;font-family:'Courier New',monospace;font-size:11px;letter-spacing:1px;color:#a82317;">PRUEBA DE CORREO</p>
+<p style="margin:0 0 14px;">Si estás leyendo esto, el SMTP de RFinance está configurado y el outbox pudo entregar el mensaje.</p>
+<p style="margin:0;font-size:13px;color:#4e463b;">Este mail lo pidió un administrador desde <a href="{{ app_url }}/admin" style="color:#a82317;">{{ app_url }}/admin</a>.</p>
+{% endblock %}

@@ -1,0 +1,12 @@
+{{ headline }}
+
+Hola{% if name != "" %} {{ name }}{% endif %}:
+
+{{ intro }}
+
+Verificá tu email abriendo este enlace (vence en 48 horas):
+{{ verify_url }}
+
+Si no creaste una cuenta en RFinance, ignorá este mensaje.
+
+— RFinance

@@ -3,6 +3,8 @@ use bcrypt;
 use serde::Deserialize;
 use sqlx::PgPool;
 
+use crate::mail::{Mailer, outbox, template, token};
+
 /// Largo de los campos de texto de user_data. Más chico que el VARCHAR(255)
 /// de la base: es política de producto, no backstop de esquema.
 pub const MAX_NAME_LENGTH: usize = 100;
@@ -19,7 +21,7 @@ pub struct RegisterRequest {
 /// punto sin extremos sueltos, sin espacios y ≤255. Suficiente para que no
 /// entren strings arbitrarios como «cuenta de correo»; la validez real la
 /// confirma el flag del mail.
-fn is_valid_email_format(email: &str) -> bool {
+pub fn is_valid_email_format(email: &str) -> bool {
     if email.len() > 255 || email.contains(char::is_whitespace) {
         return false;
     }
@@ -85,7 +87,11 @@ fn validate(body: &RegisterRequest) -> Result<(), Box<HttpResponse>> {
 
 /// POST /api/register. Sin macro de ruta: igual que login, se registra a
 /// mano en main.rs para colgar el Governor de registro en su Resource.
-pub async fn register(body: web::Json<RegisterRequest>, pool: web::Data<PgPool>) -> impl Responder {
+pub async fn register(
+    body: web::Json<RegisterRequest>,
+    pool: web::Data<PgPool>,
+    mailer: web::Data<Mailer>,
+) -> impl Responder {
     if let Err(res) = validate(&body) {
         return *res;
     }
@@ -110,6 +116,27 @@ pub async fn register(body: web::Json<RegisterRequest>, pool: web::Data<PgPool>)
         }
     };
 
+    // El mail se arma antes de abrir la transacción: un error de template
+    // corta acá, sin dejar un usuario creado a medias.
+    let welcome = if mailer.is_enabled() {
+        let raw_token = token::generate();
+        let verify_url = format!("{}/verify-email?token={}", mailer.app_url, raw_token);
+        match template::welcome(&body.email, body.name.trim(), &verify_url, &mailer.app_url) {
+            Ok(message) => Some((raw_token, message)),
+            Err(e) => {
+                log::error!("register: template de bienvenida: {e}");
+                return HttpResponse::InternalServerError().body("Error al preparar el correo");
+            }
+        }
+    } else {
+        None
+    };
+
+    let mut tx = match pool.begin().await {
+        Ok(tx) => tx,
+        Err(_) => return HttpResponse::InternalServerError().body("Error de base de datos"),
+    };
+
     // Carrera TOCTOU del check previo: si otro registro ganó la fila, el
     // UNIQUE de users salva la consistencia y se traduce en 400 en vez de un
     // panic del handler.
@@ -117,11 +144,12 @@ pub async fn register(body: web::Json<RegisterRequest>, pool: web::Data<PgPool>)
         match sqlx::query_as("INSERT INTO users (email, password) VALUES ($1, $2) RETURNING id")
             .bind(&body.email)
             .bind(&password_hashed)
-            .fetch_one(pool.get_ref())
+            .fetch_one(&mut *tx)
             .await
         {
             Ok(id) => id,
             Err(e) => {
+                let _ = tx.rollback().await;
                 if let Some(db) = e.as_database_error()
                     && db.is_unique_violation()
                 {
@@ -131,16 +159,44 @@ pub async fn register(body: web::Json<RegisterRequest>, pool: web::Data<PgPool>)
             }
         };
 
-    match sqlx::query("INSERT INTO user_data (user_id, name, last_name) VALUES ($1, $2, $3)")
+    if sqlx::query("INSERT INTO user_data (user_id, name, last_name) VALUES ($1, $2, $3)")
         .bind(user_id.0)
         .bind(body.name.trim())
         .bind(body.last_name.trim())
-        .execute(pool.get_ref())
+        .execute(&mut *tx)
         .await
+        .is_err()
     {
-        Ok(_) => HttpResponse::Ok().body("Registro exitoso"),
-        Err(_) => HttpResponse::InternalServerError().body("Error al crear los datos del usuario"),
+        let _ = tx.rollback().await;
+        return HttpResponse::InternalServerError().body("Error al crear los datos del usuario");
     }
+
+    if let Some((raw_token, message)) = welcome {
+        let token_hash = token::hash(&raw_token);
+        let prepared = async {
+            sqlx::query(
+                "INSERT INTO email_tokens (user_id, kind, token_hash, expires_at)
+                 VALUES ($1, 'verify', $2, CURRENT_TIMESTAMP + make_interval(hours => 48))",
+            )
+            .bind(user_id.0)
+            .bind(&token_hash)
+            .execute(&mut *tx)
+            .await?;
+            outbox::enqueue(&mut tx, Some(user_id.0), &message).await?;
+            tx.commit().await
+        }
+        .await;
+
+        if let Err(e) = prepared {
+            log::error!("register: no se pudo preparar la verificación: {e}");
+            return HttpResponse::InternalServerError().body("Error al preparar el correo");
+        }
+    } else if let Err(e) = tx.commit().await {
+        log::error!("register: commit: {e}");
+        return HttpResponse::InternalServerError().body("Error al crear el usuario");
+    }
+
+    HttpResponse::Ok().body("Registro exitoso")
 }
 
 #[cfg(test)]

@@ -223,6 +223,7 @@ rfinance_app/
 ├── src/
 │   ├── main.rs             # Pool, migrations, admin bootstrap, HTTP server
 │   ├── role.rs             # `Role` enum (Admin/User) parsed from the session
+│   ├── mail/               # SMTP/log, outbox + worker, tokens y plantillas
 │   ├── middleware/
 │   │   ├── auth.rs         # `check_session`: redirects and public paths
 │   │   └── grants.rs       # `extract`: role extractor for actix-web-grants
@@ -263,6 +264,11 @@ rfinance_app/
   cookie (`openssl rand -hex 32`). Rotating it invalidates every session
   (all users are logged out); see `SECURITY.md` for the rotation runbook.
 - `APP_ENV`: `production` enables secure cookies, anything else is development
+- `MAIL_TRANSPORT`: `smtp`, `log` (stdout, no network) or `disabled`
+- `MAIL_FROM` / `MAIL_REPLY_TO`: remitente y Reply-To de los correos
+- `SMTP_HOST` / `SMTP_PORT` / `SMTP_TLS` / `SMTP_USER` / `SMTP_PASS`:
+  relay SMTP (`wrapper` = 465, `starttls` = 587, `none` solo dev)
+- `APP_URL`: base pública de los enlaces de verificación y reset
 
 ## Notes
 

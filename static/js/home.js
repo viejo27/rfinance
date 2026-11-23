@@ -1249,6 +1249,23 @@
 		window.location.href = '/login';
 	});
 
+	var resendVerification = $('resendVerification');
+	if (resendVerification) {
+		resendVerification.addEventListener('click', async function () {
+			var feedback = $('resendVerificationMsg');
+			resendVerification.disabled = true;
+			feedback.textContent = '';
+			try {
+				var r = await fetch('/api/resend-verification', { method: 'POST' });
+				feedback.textContent = await r.text();
+			} catch (e) {
+				feedback.textContent = 'Error de conexión — intentá de nuevo.';
+			} finally {
+				resendVerification.disabled = false;
+			}
+		});
+	}
+
 	// ---------- arranque ----------
 
 	loadSnapshot()

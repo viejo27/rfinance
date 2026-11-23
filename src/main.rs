@@ -1,4 +1,5 @@
 mod date;
+mod mail;
 mod middleware;
 mod role;
 mod routes;
@@ -8,13 +9,17 @@ use actix_session::{SessionMiddleware, config::PersistentSession, storage::Cooki
 use actix_web::{App, HttpServer, cookie::Key, dev::ServiceRequest, get, web};
 use actix_web_grants::GrantsMiddleware;
 use dotenvy::dotenv;
+use mail::Mailer;
 use routes::api::{
-    account_create, account_delete, account_update, api_login, api_logout, api_recurrence_delete,
-    api_register, api_snapshot, category_create, category_delete, category_update,
-    transaction_create, transaction_delete, transaction_update, transfer_create, transfer_delete,
-    transfer_update,
+    account_create, account_delete, account_update, api_forgot_password, api_login, api_logout,
+    api_recurrence_delete, api_register, api_resend_verification, api_reset_password, api_snapshot,
+    category_create, category_delete, category_update, transaction_create, transaction_delete,
+    transaction_update, transfer_create, transfer_delete, transfer_update,
 };
-use routes::web::{admin_handler, index_handler, login_handler, register_handler};
+use routes::web::{
+    admin_handler, admin_mail_test, forgot_password_handler, index_handler, login_handler,
+    register_handler, reset_password_handler, verify_email_handler,
+};
 use sqlx::PgPool;
 use std::env;
 use std::net::IpAddr;
@@ -88,6 +93,13 @@ async fn main() -> std::io::Result<()> {
 
     ensure_admin_user(&db_pool).await;
 
+    // Correo transaccional: config en `.env`, worker del outbox en este
+    // mismo proceso. Con log/disabled no se toca la red.
+    let mailer = Mailer::from_env();
+    if mailer.is_enabled() {
+        mail::worker::spawn(db_pool.clone(), mailer.clone());
+    }
+
     // La cookie de sesión entera es un AEAD firmado/cifrado con esta clave:
     // si es corta o se filtra, se pueden forjar sesiones admin. El check
     // anticipa el panic críptico de Key::from con instrucción concreta.
@@ -127,6 +139,24 @@ async fn main() -> std::io::Result<()> {
         .key_extractor(RealIpKeyExtractor)
         .finish()
         .expect("config del rate limit de register");
+    let forgot_governor = GovernorConfigBuilder::default()
+        .requests_per_minute(3)
+        .burst_size(3)
+        .key_extractor(RealIpKeyExtractor)
+        .finish()
+        .expect("config del rate limit de forgot-password");
+    let reset_governor = GovernorConfigBuilder::default()
+        .requests_per_minute(5)
+        .burst_size(5)
+        .key_extractor(RealIpKeyExtractor)
+        .finish()
+        .expect("config del rate limit de reset-password");
+    let resend_governor = GovernorConfigBuilder::default()
+        .requests_per_minute(2)
+        .burst_size(2)
+        .key_extractor(RealIpKeyExtractor)
+        .finish()
+        .expect("config del rate limit de resend-verification");
 
     HttpServer::new(move || {
         let session_middleware =
@@ -136,7 +166,8 @@ async fn main() -> std::io::Result<()> {
                 .session_lifecycle(
                     PersistentSession::default()
                         // 7 días en vez de 27: menos vida útil para un
-                        // cookie robado. Sigue sin revocación server-side.
+                        // cookie robado. La revocación server-side llega
+                        // por `users.session_epoch` (reset de contraseña).
                         .session_ttl(actix_web::cookie::time::Duration::days(7)),
                 )
                 .build();
@@ -148,6 +179,7 @@ async fn main() -> std::io::Result<()> {
         // sesión (que es quien parsea el cookie): así loguea el user_id.
         App::new()
             .app_data(web::Data::new(db_pool.clone()))
+            .app_data(web::Data::new(mailer.clone()))
             .wrap(actix_web::middleware::from_fn(
                 middleware::auth::check_session,
             ))
@@ -159,13 +191,17 @@ async fn main() -> std::io::Result<()> {
             ))
             .wrap(actix_web::middleware::Logger::default())
             .service(admin_handler)
+            .service(admin_mail_test)
             .service(index_handler)
             .service(login_handler)
             .service(register_handler)
+            .service(forgot_password_handler)
+            .service(reset_password_handler)
+            .service(verify_email_handler)
             .service(api_snapshot)
-            // Login y registro con rate limit propio por endpoint: el
-            // struct que genera `#[post]` no expone el Resource, así que
-            // estos dos van con resource + route a mano.
+            // Login, registro y recuperación con rate limit propio por
+            // endpoint: el struct que genera `#[post]` no expone el Resource,
+            // así que estos van con resource + route a mano.
             .service(
                 web::resource("/api/login")
                     .wrap(Governor::new(&login_governor))
@@ -175,6 +211,21 @@ async fn main() -> std::io::Result<()> {
                 web::resource("/api/register")
                     .wrap(Governor::new(&register_governor))
                     .route(web::post().to(api_register)),
+            )
+            .service(
+                web::resource("/api/forgot-password")
+                    .wrap(Governor::new(&forgot_governor))
+                    .route(web::post().to(api_forgot_password)),
+            )
+            .service(
+                web::resource("/api/reset-password")
+                    .wrap(Governor::new(&reset_governor))
+                    .route(web::post().to(api_reset_password)),
+            )
+            .service(
+                web::resource("/api/resend-verification")
+                    .wrap(Governor::new(&resend_governor))
+                    .route(web::post().to(api_resend_verification)),
             )
             .service(api_logout)
             .service(account_create)

@@ -1,0 +1,8 @@
+PRUEBA DE CORREO
+
+Si estás leyendo esto, el SMTP de RFinance está configurado y el
+outbox pudo entregar el mensaje.
+
+Este mail lo pidió un administrador desde el panel de RFinance.
+
+— RFinance
