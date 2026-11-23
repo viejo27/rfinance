@@ -57,8 +57,12 @@ cargo fmt --check                       # check formatting
 cargo fmt                               # format code
 ```
 
-There are no automated tests in the repository yet. When adding some, prefer
-`#[sqlx::test]` so each test gets an isolated, migrated database.
+Unit tests live next to the code. Integration tests connect to `DATABASE_URL`
+and run inside a transaction that is rolled back at the end (see `connect()`
+in `recurrences.rs`, `transfers.rs`, `password_reset.rs` and `mail/worker.rs`).
+`#[sqlx::test]` would isolate each test in its own database, but the local
+role has no `CREATEDB`, so the rollback pattern is the convention here. Run
+`cargo test` with the database up.
 
 ## Code Style Guidelines
 

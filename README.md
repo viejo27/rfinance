@@ -143,7 +143,7 @@ Unauthenticated requests to protected paths are redirected to `/login` by
 cargo build              # debug build
 cargo clippy             # lints, project convention is to keep these clean
 cargo fmt                # format
-cargo test               # unit tests
+cargo test               # unit + DB integration tests (database must be up)
 ```
 
 Template errors and `sqlx::query!` column mismatches fail at compile time, which

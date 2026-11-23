@@ -97,7 +97,7 @@ async fn mail_test(
     };
 
     match outbox::enqueue_pool(pool.get_ref(), Some(user_id), &message).await {
-        Ok(()) => HttpResponse::Ok().body(format!(
+        Ok(_) => HttpResponse::Ok().body(format!(
             "Prueba encolada para {email} — revisá la casilla en unos segundos."
         )),
         Err(e) => {

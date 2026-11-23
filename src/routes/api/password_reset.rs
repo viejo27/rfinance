@@ -1,7 +1,7 @@
 use actix_session::Session;
 use actix_web::{HttpResponse, Responder, web};
 use serde::Deserialize;
-use sqlx::PgPool;
+use sqlx::{PgConnection, PgPool};
 
 use crate::mail::{Mailer, outbox, template, token};
 use crate::routes::api::register::{is_valid_email_format, validate_password};
@@ -24,6 +24,7 @@ pub struct ResetPasswordRequest {
     password: String,
 }
 
+#[derive(Debug)]
 enum ResetError {
     Invalid,
     Db(String),
@@ -140,34 +141,51 @@ pub async fn reset_password(
         }
     };
 
-    match apply_reset(pool.get_ref(), mailer.as_ref(), raw_token, &password_hash).await {
-        Ok(()) => {
-            // Si el reset se hizo con una sesión abierta, esa cookie también
-            // queda invalidada por el epoch: limpio el estado local ya.
-            session.clear();
-            HttpResponse::Ok().body("Contraseña actualizada — ingresá con tu nueva contraseña.")
+    let mut tx = match pool.begin().await {
+        Ok(tx) => tx,
+        Err(e) => {
+            log::error!("reset-password: {e}");
+            return HttpResponse::InternalServerError().body("Error de base de datos");
         }
+    };
+
+    let mailer_ref = mailer.is_enabled().then_some(mailer.as_ref());
+    match apply_reset(&mut tx, mailer_ref, raw_token, &password_hash).await {
+        Ok(()) => match tx.commit().await {
+            Ok(()) => {
+                // Si el reset se hizo con una sesión abierta, esa cookie
+                // también queda invalidada por el epoch: limpio el estado
+                // local ya.
+                session.clear();
+                HttpResponse::Ok().body("Contraseña actualizada — ingresá con tu nueva contraseña.")
+            }
+            Err(e) => {
+                log::error!("reset-password: commit: {e}");
+                HttpResponse::InternalServerError().body("Error de base de datos")
+            }
+        },
         Err(ResetError::Invalid) => {
+            let _ = tx.rollback().await;
             HttpResponse::BadRequest().body("El enlace no es válido o venció")
         }
         Err(ResetError::Db(e)) => {
+            let _ = tx.rollback().await;
             log::error!("reset-password: {e}");
             HttpResponse::InternalServerError().body("Error de base de datos")
         }
     }
 }
 
+/// Aplica el reset sobre una conexión ya transaccionada. El caller decide
+/// commit/rollback; así el test puede ejecutarlo dentro de una transacción
+/// que se revierte y no ensucia la base.
 async fn apply_reset(
-    pool: &PgPool,
-    mailer: &Mailer,
+    conn: &mut PgConnection,
+    mailer: Option<&Mailer>,
     raw_token: &str,
     password_hash: &str,
 ) -> Result<(), ResetError> {
     let token_hash = token::hash(raw_token);
-    let mut tx = pool
-        .begin()
-        .await
-        .map_err(|e| ResetError::Db(e.to_string()))?;
 
     let row: Option<(i32, String)> = sqlx::query_as(
         "SELECT t.user_id, u.email
@@ -178,7 +196,7 @@ async fn apply_reset(
          FOR UPDATE OF t",
     )
     .bind(&token_hash)
-    .fetch_optional(&mut *tx)
+    .fetch_optional(&mut *conn)
     .await
     .map_err(|e| ResetError::Db(e.to_string()))?;
 
@@ -193,7 +211,7 @@ async fn apply_reset(
     )
     .bind(password_hash)
     .bind(user_id)
-    .execute(&mut *tx)
+    .execute(&mut *conn)
     .await
     .map_err(|e| ResetError::Db(e.to_string()))?;
 
@@ -203,27 +221,168 @@ async fn apply_reset(
          WHERE user_id = $1 AND kind = 'reset' AND used_at IS NULL",
     )
     .bind(user_id)
-    .execute(&mut *tx)
+    .execute(&mut *conn)
     .await
     .map_err(|e| ResetError::Db(e.to_string()))?;
 
-    if mailer.is_enabled() {
+    if let Some(mailer) = mailer {
         let name: Option<(Option<String>,)> =
             sqlx::query_as("SELECT name FROM user_data WHERE user_id = $1")
                 .bind(user_id)
-                .fetch_optional(&mut *tx)
+                .fetch_optional(&mut *conn)
                 .await
                 .map_err(|e| ResetError::Db(e.to_string()))?;
         let name = name.and_then(|(name,)| name).unwrap_or_default();
         let message = template::password_changed(&email, &name, &mailer.app_url)
             .map_err(|e| ResetError::Db(e.to_string()))?;
-        outbox::enqueue(&mut tx, Some(user_id), &message)
+        outbox::enqueue(&mut *conn, Some(user_id), &message)
             .await
             .map_err(|e| ResetError::Db(e.to_string()))?;
     }
 
-    tx.commit()
-        .await
-        .map_err(|e| ResetError::Db(e.to_string()))?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{ResetError, apply_reset};
+    use crate::mail::token;
+    use sqlx::{Connection, PgConnection};
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    async fn connect() -> PgConnection {
+        dotenvy::dotenv().ok();
+        let url = std::env::var("DATABASE_URL").expect("DATABASE_URL para los tests");
+        PgConnection::connect(&url).await.expect("conexión de test")
+    }
+
+    async fn make_user(tx: &mut PgConnection) -> i32 {
+        let nanos = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .map(|d| d.as_nanos())
+            .unwrap_or(1);
+        let email = format!("test-reset-{nanos}@rfinance.local");
+        let (id,): (i32,) = sqlx::query_as(
+            "INSERT INTO users (email, password) VALUES ($1, 'hash-viejo') RETURNING id",
+        )
+        .bind(&email)
+        .fetch_one(&mut *tx)
+        .await
+        .expect("user de test");
+        id
+    }
+
+    async fn give_token(tx: &mut PgConnection, user_id: i32, kind: &str, raw: &str, minutes: i32) {
+        sqlx::query(
+            "INSERT INTO email_tokens (user_id, kind, token_hash, expires_at)
+             VALUES ($1, $2, $3, CURRENT_TIMESTAMP + make_interval(mins => $4))",
+        )
+        .bind(user_id)
+        .bind(kind)
+        .bind(token::hash(raw))
+        .bind(minutes)
+        .execute(&mut *tx)
+        .await
+        .expect("token de test");
+    }
+
+    async fn user_state(tx: &mut PgConnection, user_id: i32) -> (String, i32) {
+        sqlx::query_as("SELECT password, session_epoch FROM users WHERE id = $1")
+            .bind(user_id)
+            .fetch_one(&mut *tx)
+            .await
+            .expect("estado del user")
+    }
+
+    #[actix_web::test]
+    async fn reset_consume_el_token_y_sube_el_epoch() {
+        let mut conn = connect().await;
+        let mut tx = conn.begin().await.expect("tx");
+        let user_id = make_user(&mut tx).await;
+        let raw = token::generate();
+        give_token(&mut tx, user_id, "reset", &raw, 60).await;
+
+        apply_reset(&mut tx, None, &raw, "hash-nuevo")
+            .await
+            .expect("reset válido");
+
+        assert_eq!(user_state(&mut tx, user_id).await, ("hash-nuevo".into(), 1));
+
+        let used: (bool,) =
+            sqlx::query_as("SELECT used_at IS NOT NULL FROM email_tokens WHERE token_hash = $1")
+                .bind(token::hash(&raw))
+                .fetch_one(&mut *tx)
+                .await
+                .expect("token");
+        assert!(used.0);
+
+        assert!(matches!(
+            apply_reset(&mut tx, None, &raw, "otro-hash").await,
+            Err(ResetError::Invalid)
+        ));
+        assert_eq!(user_state(&mut tx, user_id).await, ("hash-nuevo".into(), 1));
+
+        tx.rollback().await.expect("rollback");
+    }
+
+    #[actix_web::test]
+    async fn reset_vencido_no_cambia_nada() {
+        let mut conn = connect().await;
+        let mut tx = conn.begin().await.expect("tx");
+        let user_id = make_user(&mut tx).await;
+        let raw = token::generate();
+        give_token(&mut tx, user_id, "reset", &raw, -1).await;
+
+        assert!(matches!(
+            apply_reset(&mut tx, None, &raw, "hash-nuevo").await,
+            Err(ResetError::Invalid)
+        ));
+        assert_eq!(user_state(&mut tx, user_id).await, ("hash-viejo".into(), 0));
+
+        tx.rollback().await.expect("rollback");
+    }
+
+    #[actix_web::test]
+    async fn reset_invalida_los_tokens_anteriores() {
+        let mut conn = connect().await;
+        let mut tx = conn.begin().await.expect("tx");
+        let user_id = make_user(&mut tx).await;
+        let first = token::generate();
+        let second = token::generate();
+        give_token(&mut tx, user_id, "reset", &first, 60).await;
+        give_token(&mut tx, user_id, "reset", &second, 60).await;
+
+        apply_reset(&mut tx, None, &first, "hash-nuevo")
+            .await
+            .expect("reset válido");
+
+        let used: (i64,) = sqlx::query_as(
+            "SELECT count(*) FROM email_tokens
+             WHERE user_id = $1 AND kind = 'reset' AND used_at IS NOT NULL",
+        )
+        .bind(user_id)
+        .fetch_one(&mut *tx)
+        .await
+        .expect("tokens usados");
+        assert_eq!(used.0, 2);
+
+        tx.rollback().await.expect("rollback");
+    }
+
+    #[actix_web::test]
+    async fn reset_ignora_tokens_de_verificacion() {
+        let mut conn = connect().await;
+        let mut tx = conn.begin().await.expect("tx");
+        let user_id = make_user(&mut tx).await;
+        let raw = token::generate();
+        give_token(&mut tx, user_id, "verify", &raw, 60).await;
+
+        assert!(matches!(
+            apply_reset(&mut tx, None, &raw, "hash-nuevo").await,
+            Err(ResetError::Invalid)
+        ));
+        assert_eq!(user_state(&mut tx, user_id).await, ("hash-viejo".into(), 0));
+
+        tx.rollback().await.expect("rollback");
+    }
 }
