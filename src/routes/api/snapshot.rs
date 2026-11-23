@@ -309,7 +309,7 @@ mod tests {
         id
     }
 
-    #[async_std::test]
+    #[actix_web::test]
     async fn snapshot_year_filter() {
         // El snapshot ya no trae el libro entero: pide un año y devuelve
         // solo ese año, aunque existan asientos de años vecinos.

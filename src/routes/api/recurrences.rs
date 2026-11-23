@@ -310,7 +310,7 @@ mod tests {
         assert_eq!(MONTH_ABBREVIATIONS[11], "DIC");
     }
 
-    #[async_std::test]
+    #[actix_web::test]
     async fn open_ended_keeps_rolling_twelve_month_window() {
         let mut conn = connect().await;
         let mut tx = conn.begin().await.expect("tx");
@@ -342,7 +342,7 @@ mod tests {
         tx.rollback().await.expect("rollback");
     }
 
-    #[async_std::test]
+    #[actix_web::test]
     async fn installments_across_year() {
         let mut conn = connect().await;
         let mut tx = conn.begin().await.expect("tx");
@@ -366,7 +366,7 @@ mod tests {
         tx.rollback().await.expect("rollback");
     }
 
-    #[async_std::test]
+    #[actix_web::test]
     async fn materialize_caps_per_call() {
         // Una serie de 600 cuotas no se cuelga el request: una llamada
         // materializa como mucho el tope, y la siguiente pasada continúa

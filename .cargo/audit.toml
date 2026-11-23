@@ -1,0 +1,9 @@
+[advisories]
+ignore = [
+    # cookie 0.16.2 vía actix-web: no existe 0.16.x parcheada (el fix está en
+    # 0.18.3, incompatible con la API de actix-web 4). No es explotable acá:
+    # el advisory solo afecta procesos que hacen fork() y esta app no forkea
+    # (los workers de actix son hilos), además la Key se crea con Key::from.
+    # Revisar cuando actix-web migre a cookie 0.18.
+    "RUSTSEC-2026-0594",
+]

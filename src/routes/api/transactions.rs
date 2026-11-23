@@ -866,7 +866,7 @@ mod tests {
 
     // El bug original: editar un asiento de la serie con alcance Unica (o sin
     // alcance, clientes viejos) no debe borrar ni tocar ningún otro.
-    #[async_std::test]
+    #[actix_web::test]
     async fn single_leaves_series_intact() {
         let mut conn = connect().await;
         let mut tx = conn.begin().await.expect("tx");
@@ -899,7 +899,7 @@ mod tests {
     }
 
     // Clientes sin el campo alcance: default seguro (Unica), nada desaparece.
-    #[async_std::test]
+    #[actix_web::test]
     async fn no_scope_defaults_to_single() {
         let mut conn = connect().await;
         let mut tx = conn.begin().await.expect("tx");
@@ -923,7 +923,7 @@ mod tests {
 
     // "Este y los siguientes": re-plantilla desde la fila editada; lo anterior
     // no se toca; las cuotas totales descuentan lo ya transcurrido.
-    #[async_std::test]
+    #[actix_web::test]
     async fn following_replants_from_row() {
         let mut conn = connect().await;
         let mut tx = conn.begin().await.expect("tx");
@@ -960,7 +960,7 @@ mod tests {
     }
 
     // "Este y los siguientes" sin rec en el body: la serie termina acá.
-    #[async_std::test]
+    #[actix_web::test]
     async fn following_without_rec_ends_series() {
         let mut conn = connect().await;
         let mut tx = conn.begin().await.expect("tx");
@@ -986,7 +986,7 @@ mod tests {
     }
 
     // Asiento simple (sin recurrencia): se edita la fila nomás.
-    #[async_std::test]
+    #[actix_web::test]
     async fn simple_edits_in_peace() {
         let mut conn = connect().await;
         let mut tx = conn.begin().await.expect("tx");

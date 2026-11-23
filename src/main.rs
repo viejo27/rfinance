@@ -250,11 +250,11 @@ async fn ensure_admin_user(pool: &PgPool) {
 /// Favicon: archivo único servido con su content-type (`image/x-icon`).
 #[get("/favicon.ico")]
 async fn favicon_ico() -> actix_web::Result<actix_files::NamedFile> {
-    Ok(actix_files::NamedFile::open_async("static/favicon.ico").await?)
+    Ok(actix_files::NamedFile::open("static/favicon.ico")?)
 }
 
 /// Master del favicon (512 px, con la proveniencia embebida).
 #[get("/favicon-512.png")]
 async fn favicon_png() -> actix_web::Result<actix_files::NamedFile> {
-    Ok(actix_files::NamedFile::open_async("static/favicon-512.png").await?)
+    Ok(actix_files::NamedFile::open("static/favicon-512.png")?)
 }

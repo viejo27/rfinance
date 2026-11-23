@@ -171,10 +171,10 @@ let existing: Option<(i32,)> = sqlx::query_as("SELECT id FROM users WHERE email 
   offline cache
 - Use `PgPool` for connection pooling
 - Pass pool via `web::Data<PgPool>`, get reference with `db_pool.get_ref()`
-- The `sqlx` dependency enables `runtime-async-std`, which sqlx 0.9 still
-  supports. actix-web runs on tokio, so `runtime-tokio` is the more natural
-  pairing; the async-std crate itself is deprecated upstream, and sqlx 0.9
-  added `runtime-smol` and `runtime-async-global-executor` as alternatives
+- The `sqlx` dependency enables `runtime-tokio`, matching actix-web's tokio
+  runtime. Tests use `#[actix_web::test]` for the same reason. sqlx 0.9 still
+  offers `runtime-smol`, `runtime-async-std` (deprecated upstream) and
+  `runtime-async-global-executor` as alternatives
 
 ### Database Migrations
 

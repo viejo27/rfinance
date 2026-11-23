@@ -358,7 +358,7 @@ mod tests {
         id
     }
 
-    #[async_std::test]
+    #[actix_web::test]
     async fn transferencia_mueve_saldos_y_no_es_asiento() {
         let mut conn = connect().await;
         let mut tx = conn.begin().await.expect("tx");
@@ -396,7 +396,7 @@ mod tests {
         tx.rollback().await.expect("rollback");
     }
 
-    #[async_std::test]
+    #[actix_web::test]
     async fn misma_moneda_exige_montos_iguales() {
         let mut conn = connect().await;
         let mut tx = conn.begin().await.expect("tx");
@@ -417,7 +417,7 @@ mod tests {
         tx.rollback().await.expect("rollback");
     }
 
-    #[async_std::test]
+    #[actix_web::test]
     async fn cuenta_ajena_no_se_resuelve() {
         let mut conn = connect().await;
         let mut tx = conn.begin().await.expect("tx");
@@ -433,7 +433,7 @@ mod tests {
         tx.rollback().await.expect("rollback");
     }
 
-    #[async_std::test]
+    #[actix_web::test]
     async fn editar_y_borrar_transferencia() {
         let mut conn = connect().await;
         let mut tx = conn.begin().await.expect("tx");

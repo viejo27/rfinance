@@ -51,28 +51,34 @@ pub fn validate_password(password: &str) -> Result<(), String> {
 }
 
 /// Devuelve HttpResponse para cortar temprano con 400 y texto claro.
-fn validate(body: &RegisterRequest) -> Result<(), HttpResponse> {
+fn validate(body: &RegisterRequest) -> Result<(), Box<HttpResponse>> {
     if !is_valid_email_format(&body.email) {
-        return Err(HttpResponse::BadRequest().body("El email no es válido"));
+        return Err(Box::new(
+            HttpResponse::BadRequest().body("El email no es válido"),
+        ));
     }
     if let Err(msg) = validate_password(&body.password) {
-        return Err(HttpResponse::BadRequest().body(msg));
+        return Err(Box::new(HttpResponse::BadRequest().body(msg)));
     }
     if body.name.trim().is_empty() {
-        return Err(HttpResponse::BadRequest().body("El nombre es obligatorio"));
+        return Err(Box::new(
+            HttpResponse::BadRequest().body("El nombre es obligatorio"),
+        ));
     }
     if body.name.chars().count() > MAX_NAME_LENGTH {
-        return Err(
-            HttpResponse::BadRequest().body("El nombre no puede superar los 100 caracteres")
-        );
+        return Err(Box::new(
+            HttpResponse::BadRequest().body("El nombre no puede superar los 100 caracteres"),
+        ));
     }
     if body.last_name.trim().is_empty() {
-        return Err(HttpResponse::BadRequest().body("El apellido es obligatorio"));
+        return Err(Box::new(
+            HttpResponse::BadRequest().body("El apellido es obligatorio"),
+        ));
     }
     if body.last_name.chars().count() > MAX_NAME_LENGTH {
-        return Err(
-            HttpResponse::BadRequest().body("El apellido no puede superar los 100 caracteres")
-        );
+        return Err(Box::new(
+            HttpResponse::BadRequest().body("El apellido no puede superar los 100 caracteres"),
+        ));
     }
     Ok(())
 }
@@ -81,7 +87,7 @@ fn validate(body: &RegisterRequest) -> Result<(), HttpResponse> {
 /// mano en main.rs para colgar el Governor de registro en su Resource.
 pub async fn register(body: web::Json<RegisterRequest>, pool: web::Data<PgPool>) -> impl Responder {
     if let Err(res) = validate(&body) {
-        return res;
+        return *res;
     }
 
     let existing: Option<(i32,)> = match sqlx::query_as("SELECT id FROM users WHERE email = $1")
