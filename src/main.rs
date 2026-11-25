@@ -1,6 +1,8 @@
 mod date;
 mod mail;
+mod market;
 mod middleware;
+mod portfolio;
 mod role;
 mod routes;
 
@@ -13,12 +15,17 @@ use mail::Mailer;
 use routes::api::{
     account_create, account_delete, account_update, api_forgot_password, api_login, api_logout,
     api_recurrence_delete, api_register, api_resend_verification, api_reset_password, api_snapshot,
-    category_create, category_delete, category_update, transaction_create, transaction_delete,
-    transaction_update, transfer_create, transfer_delete, transfer_update,
+    category_create, category_delete, category_update, portfolio_asset_create,
+    portfolio_asset_delete, portfolio_asset_update, portfolio_assets_clear, portfolio_example,
+    portfolio_get, portfolio_rebalance_execute, portfolio_refresh, portfolio_settings_update,
+    portfolio_targets_apply, portfolio_targets_preview, portfolio_trigger_create,
+    portfolio_trigger_delete, portfolio_trigger_execute, portfolio_trigger_update,
+    transaction_create, transaction_delete, transaction_update, transfer_create, transfer_delete,
+    transfer_update,
 };
 use routes::web::{
     admin_handler, admin_mail_test, forgot_password_handler, index_handler, login_handler,
-    register_handler, reset_password_handler, verify_email_handler,
+    portfolio_handler, register_handler, reset_password_handler, verify_email_handler,
 };
 use sqlx::PgPool;
 use std::env;
@@ -115,6 +122,10 @@ async fn main() -> std::io::Result<()> {
     let session_key = Key::from(session_key_str.as_bytes());
     let is_production = env::var("APP_ENV").unwrap_or_default() == "production";
 
+    // Tasas MEP/CCL de DolarAPI con caché en memoria. La API de la
+    // cartera sigue respondiendo aunque la fuente esté caída.
+    let fx_cache = web::Data::new(market::fx::FxCache::new());
+
     // Dirección de escucha: loopback por defecto (el proxy/uso local es la
     // norma). Para LAN se setea BIND_ADDR=0.0.0.0:8080; sin TLS eso deja
     // sesiones replayables en la red (ver SECURITY.md), solo red de confianza.
@@ -180,6 +191,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .app_data(web::Data::new(db_pool.clone()))
             .app_data(web::Data::new(mailer.clone()))
+            .app_data(fx_cache.clone())
             .wrap(actix_web::middleware::from_fn(
                 middleware::auth::check_session,
             ))
@@ -193,6 +205,7 @@ async fn main() -> std::io::Result<()> {
             .service(admin_handler)
             .service(admin_mail_test)
             .service(index_handler)
+            .service(portfolio_handler)
             .service(login_handler)
             .service(register_handler)
             .service(forgot_password_handler)
@@ -241,6 +254,21 @@ async fn main() -> std::io::Result<()> {
             .service(transfer_update)
             .service(transfer_delete)
             .service(api_recurrence_delete)
+            .service(portfolio_get)
+            .service(portfolio_refresh)
+            .service(portfolio_asset_create)
+            .service(portfolio_asset_update)
+            .service(portfolio_asset_delete)
+            .service(portfolio_assets_clear)
+            .service(portfolio_rebalance_execute)
+            .service(portfolio_targets_preview)
+            .service(portfolio_targets_apply)
+            .service(portfolio_trigger_create)
+            .service(portfolio_trigger_update)
+            .service(portfolio_trigger_delete)
+            .service(portfolio_trigger_execute)
+            .service(portfolio_settings_update)
+            .service(portfolio_example)
             // Sin show_files_listing: el listing regala el inventario de
             // /css y /js y no suma nada.
             .service(actix_files::Files::new("/css", "static/css"))

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="es">
+	<head>
+		<title>RFinance · Inversiones</title>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link href="/css/style.css" rel="stylesheet">
+		<link href="/css/dashboard.css" rel="stylesheet">
+		<link href="/css/portfolio.css" rel="stylesheet">
+		<link rel="icon" type="image/x-icon" href="/favicon.ico">
+	</head>
+	<body class="app portfolio" data-today="{{ today_iso }}">
+		<header class="shellbar">
+			<div class="shell-inner">
+				<a class="brand" href="/">RFINANCE</a>
+				<nav aria-label="Secciones de RFinance">
+					<ul class="section-nav">
+						<li><a class="nav-link" href="/">REGISTRO</a></li>
+						<li><a class="nav-link" href="/#sec-accounts">CUENTAS</a></li>
+						<li><a class="nav-link" href="/#sec-budget">PRESUPUESTOS</a></li>
+						<li><span class="nav-link" aria-disabled="true">INFORMES *</span></li>
+						<li><span class="nav-link" aria-disabled="true">DEUDAS *</span></li>
+						<li><span class="nav-link" aria-disabled="true">OBJETIVOS *</span></li>
+						<li><a class="nav-link is-current" href="/inversiones" aria-current="page">INVERSIONES</a></li>
+					</ul>
+				</nav>
+				<div class="user-shell">
+					<span class="user-email figure">{{ email }}</span>
+					<button id="logoutBtn" class="btn btn-exit" type="button">SALIR</button>
+				</div>
+			</div>
+		</header>
+
+		<main class="frame">
+			<div class="margin-band mini-label">
+				<span>CORTE: <b>{{ cutoff }}</b></span>
+				<span class="valuation-picker">
+					<label for="valuationSelect">VISTA</label>
+					<select id="valuationSelect" class="field field-inline" aria-label="Moneda de valuación"></select>
+				</span>
+				<span>TASAS: MEP <b id="fxMep">—</b> · CCL <b id="fxCcl">—</b></span>
+				<span id="fxStamp">SIN LECTURA</span>
+				<button class="btn btn-mini" id="refreshRates" type="button">ACTUALIZAR TASAS</button>
+			</div>
+
+			<p class="notice" id="portfolioNotice" role="status" hidden></p>
+			<p class="fx-warning mini-label" id="fxWarning" role="status" hidden></p>
+
+			<section class="portfolio-section" aria-labelledby="t-portfolio">
+				<h2 id="t-portfolio" class="section-band"><span class="section-title">Inversiones · estrategia</span></h2>
+
+				<div class="portfolio-hero">
+					<div class="score-stamp" id="scoreStamp">
+						<span class="mini-label">DIAGNÓSTICO</span>
+						<span class="score-num" id="scoreValue">0</span>
+						<span class="score-status" id="scoreStatus">SIN DATOS</span>
+					</div>
+
+					<div class="portfolio-hero-main">
+						<span class="mini-label">TOTAL · <span id="heroView">USD · CCL</span></span>
+						<span class="portfolio-total" id="heroTotal">—</span>
+						<span class="portfolio-total-sub" id="heroSub"></span>
+						<p class="portfolio-status-detail" id="statusDetail"></p>
+
+						<div class="portfolio-kpis">
+							<div class="portfolio-kpi">
+								<span class="mini-label">ACTIVOS RV</span>
+								<b id="kpiAssets">0</b>
+								<span id="kpiAssetsSub">—</span>
+							</div>
+							<div class="portfolio-kpi">
+								<span class="mini-label">ECONOMÍAS</span>
+								<b id="kpiEconomies">0</b>
+								<span id="kpiEconomiesSub">—</span>
+							</div>
+							<div class="portfolio-kpi">
+								<span class="mini-label">UNIDADES EFECTIVAS</span>
+								<b id="kpiEffective">0,0</b>
+								<span id="kpiEffectiveSub">—</span>
+							</div>
+							<div class="portfolio-kpi">
+								<span class="mini-label">RENTA FIJA</span>
+								<b id="kpiFixed">0 %</b>
+								<span id="kpiFixedSub">—</span>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="portfolio-empty" id="portfolioEmpty" hidden>
+					<span class="mini-label">SIN CARTERA</span>
+					<p>Cargá el primer activo o traé la cartera de ejemplo para ver cómo mide la estrategia.</p>
+					<div class="portfolio-empty-actions">
+						<button class="btn btn-primary" id="emptyAddAsset" type="button">AGREGAR ACTIVO</button>
+						<button class="btn" id="emptyExample" type="button">CARGAR CARTERA DE EJEMPLO</button>
+					</div>
+					<p class="mini-label portfolio-demo-note">DATOS REALES Y EDITABLES · NO TOCA TUS CUENTAS NI TU LIBRO.</p>
+				</div>
+			</section>
+
+			<section class="portfolio-section" aria-labelledby="t-checks">
+				<h2 id="t-checks" class="section-band"><span class="section-title">Diagnóstico</span></h2>
+				<p class="mini-label diagnosis-legend">ANCLA Y MOTOR: BIEN = dentro de la banda · FUERA DE BANDA = hasta el doble · ALERTA = más del doble.</p>
+				<div class="portfolio-checks" id="checksList"></div>
+			</section>
+
+			<section class="portfolio-section" aria-labelledby="t-composition">
+				<h2 id="t-composition" class="section-band"><span class="section-title">Composición</span></h2>
+				<div class="portfolio-composition" id="compositionGrid"></div>
+			</section>
+
+			<section class="portfolio-section" id="sec-assets" aria-labelledby="t-assets">
+				<h2 id="t-assets" class="section-band"><span class="section-title">Cartera</span></h2>
+
+				<div class="table-wrap" id="assetsWrap" hidden>
+					<table class="ledger portfolio-table" id="assetsTable">
+						<thead>
+							<tr>
+								<th scope="col">ACTIVO</th>
+								<th scope="col">CLASE</th>
+								<th scope="col">EXPOSICIÓN</th>
+								<th scope="col">VALOR TOTAL</th>
+								<th scope="col">PESO</th>
+								<th scope="col">OBJETIVO</th>
+								<th scope="col">DESVÍO</th>
+								<th scope="col">DISPARADORES</th>
+								<th scope="col">ACCIONES</th>
+							</tr>
+						</thead>
+						<tbody id="assetsBody"></tbody>
+					</table>
+				</div>
+
+				<p class="mini-label portfolio-note" id="assetsEmptyNote" hidden>LA CARTERA ESTÁ VACÍA · CARGÁ EL PRIMER ACTIVO ABAJO</p>
+
+				<form class="form-box" id="assetForm" aria-label="Agregar activo">
+					<span class="mini-label" id="assetFormTitle">AGREGAR ACTIVO</span>
+					<div class="form-row">
+						<div class="form-field form-field-short">
+							<label class="field-label mini-label" for="assetTicker">TICKER <small>(OPCIONAL)</small></label>
+							<input class="field" type="text" id="assetTicker" maxlength="20" placeholder="AAPL">
+						</div>
+						<div class="form-field form-field-wide">
+							<label class="field-label mini-label" for="assetName">NOMBRE</label>
+							<input class="field" type="text" id="assetName" maxlength="120" placeholder="Apple" required>
+						</div>
+						<div class="form-field form-field-short">
+							<label class="field-label mini-label" for="assetClass">CLASE</label>
+							<select class="field" id="assetClass"></select>
+						</div>
+						<div class="form-field form-field-short" id="assetFixedIncomeWrap" hidden>
+							<label class="field-label mini-label" for="assetFixedIncomePct">PARTE RENTA FIJA %</label>
+							<input class="field" type="number" id="assetFixedIncomePct" min="1" max="99" step="0.1" value="50" disabled>
+						</div>
+						<div class="form-field form-field-short">
+							<label class="field-label mini-label" for="assetEconomy">ECONOMÍA</label>
+							<select class="field" id="assetEconomy"></select>
+						</div>
+						<div class="form-field form-field-short">
+							<label class="field-label mini-label" for="assetSector">SECTOR</label>
+							<select class="field" id="assetSector"></select>
+						</div>
+					</div>
+					<div class="form-row">
+						<div class="form-field form-field-short">
+							<label class="field-label mini-label" for="assetValue">VALOR TOTAL DE LA POSICIÓN</label>
+							<input class="field" type="number" id="assetValue" min="0" step="0.01" inputmode="decimal" placeholder="0,00" required>
+							<p class="mini-label field-hint">Monto total, no precio por unidad.</p>
+						</div>
+						<div class="form-field form-field-tiny">
+							<label class="field-label mini-label" for="assetCurrency">MONEDA</label>
+							<select class="field" id="assetCurrency">
+								<option value="USD" selected>USD</option>
+								<option value="ARS">ARS</option>
+							</select>
+						</div>
+						<div class="form-field form-field-cash">
+							<span class="field-label mini-label">LIQUIDEZ</span>
+							<label class="recurring-toggle">
+								<input type="checkbox" id="assetIsCash" disabled>
+								<span class="mini-label">ES LIQUIDEZ</span>
+							</label>
+						</div>
+						<div class="form-field form-field-short">
+							<label class="field-label mini-label" for="assetTarget">PESO OBJETIVO %</label>
+							<input class="field" type="number" id="assetTarget" min="0" max="100" step="0.1" value="0" required>
+						</div>
+						<div class="form-field form-field-wide">
+							<label class="field-label mini-label" for="assetThesis">TESIS</label>
+							<input class="field" type="text" id="assetThesis" maxlength="2000" placeholder="Por qué entra al portafolio">
+						</div>
+						<div class="form-field form-field-wide">
+							<label class="field-label mini-label" for="assetObjective">OBJETIVO</label>
+							<input class="field" type="text" id="assetObjective" maxlength="2000" placeholder="Qué tiene que pasar para sostenerla">
+						</div>
+						<div class="form-actions">
+							<button class="btn btn-primary" id="assetFormSubmit" type="submit">AGREGAR</button>
+							<button class="btn" id="assetFormCancel" type="button" hidden>CANCELAR</button>
+						</div>
+					</div>
+				</form>
+
+				<p class="notice section-notice" id="assetStatus" role="status" hidden></p>
+				<div class="portfolio-danger-zone">
+					<span class="mini-label">MANTENIMIENTO</span>
+					<button class="btn btn-mini btn-mini-danger" id="clearPortfolio" type="button">VACIAR CARTERA</button>
+				</div>
+			</section>
+
+			<section class="portfolio-section" id="sec-rebalance" aria-labelledby="t-rebalance">
+				<h2 id="t-rebalance" class="section-band"><span class="section-title">Rebalanceo</span></h2>
+				<p class="mini-label rebalance-view" id="rebalanceView"></p>
+				<div class="target-panel" id="targetPanel" hidden>
+					<div class="target-panel-head">
+						<div>
+							<span class="mini-label">OBJETIVOS</span>
+							<p class="target-summary" id="targetSummary"></p>
+							<p class="mini-label target-help">Solo cambia porcentajes objetivo. No compra ni vende.</p>
+						</div>
+						<div class="target-actions">
+							<button class="btn btn-mini" id="targetEquityBtn" type="button">REPARTIR RV</button>
+							<button class="btn btn-mini" id="targetFixedIncomeBtn" type="button">REPARTIR RF</button>
+						</div>
+					</div>
+					<div class="target-preview" id="targetPreview" hidden></div>
+				</div>
+				<p class="notice section-notice" id="targetStatus" role="status" hidden></p>
+				<div class="rebalance-list" id="rebalanceList"></div>
+
+				<div class="drawdown-block">
+					<h3 class="portfolio-block-title">Costo de caer</h3>
+					<p class="mini-label">Cuánto tiene que subir la cartera para volver al punto de partida.</p>
+					<div class="drawdown-list" id="drawdownList"></div>
+				</div>
+				<p class="notice section-notice" id="rebalanceStatus" role="status" hidden></p>
+			</section>
+			<section class="portfolio-section" id="sec-triggers" aria-labelledby="t-triggers">
+				<h2 id="t-triggers" class="section-band"><span class="section-title">Cuándo vender</span></h2>
+
+				<div class="pending-triggers" id="pendingTriggers" hidden></div>
+				<div class="trigger-panel" id="triggerPanel">
+					<div class="trigger-panel-head">
+						<span class="mini-label">DISPARADORES DEL ACTIVO</span>
+					</div>
+					<div class="trigger-toolbar">
+						<label class="mini-label" for="triggerAsset">ACTIVO</label>
+						<select class="field" id="triggerAsset"></select>
+						<span class="mini-label" id="triggerSummary"></span>
+					</div>
+					<div id="triggerList"></div>
+
+					<form class="trigger-form" id="triggerForm" aria-label="Agregar disparador">
+						<div class="form-row">
+							<div class="form-field form-field-short">
+								<label class="field-label mini-label" for="triggerKind">TIPO</label>
+								<select class="field" id="triggerKind"></select>
+							</div>
+							<div class="form-field form-field-wide">
+								<label class="field-label mini-label" for="triggerDescription">CONDICIÓN</label>
+								<input class="field" type="text" id="triggerDescription" maxlength="300" placeholder="Si pasa esto, vendo" required>
+							</div>
+							<div class="form-actions">
+								<button class="btn btn-primary" id="triggerSubmit" type="submit">AGREGAR DISPARADOR</button>
+							</div>
+						</div>
+						<p class="mini-label trigger-help" id="triggerHelp">Un disparador es una condición escrita: si se cumple, se vende; si no, no.</p>
+					</form>
+					<p class="notice section-notice" id="triggerStatus" role="status" hidden></p>
+				</div>
+			</section>
+
+
+			<section class="portfolio-section" aria-labelledby="t-settings">
+				<h2 id="t-settings" class="section-band"><span class="section-title">Ajustes de la estrategia</span></h2>
+
+				<form class="settings-form" id="settingsForm" aria-label="Ajustes de la estrategia">
+					<input type="hidden" id="settingsProfile" value="aggressive">
+					<div class="profile-switch-wrap">
+						<span class="mini-label">PERFIL</span>
+						<div class="profile-switch" id="profileSwitch" role="group" aria-label="Perfil de riesgo"></div>
+						<span class="mini-label settings-custom" id="settingsCustom" hidden>PERSONALIZADO</span>
+					</div>
+
+					<div class="form-row">
+						<div class="form-field form-field-short">
+							<label class="field-label mini-label" for="settingsValuation">VISTA</label>
+							<select class="field" id="settingsValuation"></select>
+						</div>
+						<div class="form-field form-field-short">
+							<label class="field-label mini-label" for="settingsFixed">RENTA FIJA OBJETIVO %</label>
+							<input class="field" type="number" id="settingsFixed" min="0" max="100" step="0.1" required>
+						</div>
+						<div class="form-field form-field-short">
+							<label class="field-label mini-label" for="settingsEquity">RENTA VARIABLE OBJETIVO %</label>
+							<input class="field" type="number" id="settingsEquity" min="0" max="100" step="0.1" required>
+						</div>
+						<div class="form-field form-field-short">
+							<label class="field-label mini-label" for="settingsBand">BANDA ± PP</label>
+							<input class="field" type="number" id="settingsBand" min="0" max="100" step="0.1" required>
+						</div>
+					</div>
+
+					<div class="form-row">
+						<div class="form-field form-field-tiny">
+							<label class="field-label mini-label" for="settingsMin">MÍN. ACTIVOS RV</label>
+							<input class="field" type="number" id="settingsMin" min="0" max="50" step="1" required>
+						</div>
+						<div class="form-field form-field-tiny">
+							<label class="field-label mini-label" for="settingsMax">MÁX. ACTIVOS RV</label>
+							<input class="field" type="number" id="settingsMax" min="0" max="50" step="1" required>
+						</div>
+						<div class="form-field form-field-short">
+							<label class="field-label mini-label" for="settingsMaxAsset">MÁX. POR ACTIVO %</label>
+							<input class="field" type="number" id="settingsMaxAsset" min="0" max="100" step="0.1" required>
+						</div>
+						<div class="form-field form-field-short">
+							<label class="field-label mini-label" for="settingsMaxEconomy">MÁX. POR ECONOMÍA %</label>
+							<input class="field" type="number" id="settingsMaxEconomy" min="0" max="100" step="0.1" required>
+						</div>
+						<div class="form-field form-field-short">
+							<label class="field-label mini-label" for="settingsMaxCluster">MÁX. POR BLOQUE %</label>
+							<input class="field" type="number" id="settingsMaxCluster" min="0" max="100" step="0.1" required>
+						</div>
+						<div class="form-actions">
+							<button class="btn btn-primary" id="settingsSubmit" type="submit">GUARDAR AJUSTES</button>
+						</div>
+					</div>
+					<p class="mini-label settings-help">El perfil es un punto de partida; podés editar cada criterio. La vista no cambia el portafolio, solo la moneda en que se mide.</p>
+				</form>
+				<p class="notice section-notice" id="settingsStatus" role="status" hidden></p>
+			</section>
+
+			<footer class="footer mini-label">
+				<span>* SECCIÓN <b>EN CONSTRUCCIÓN</b> · INFORMES, DEUDAS, OBJETIVOS</span>
+				<span>VALUACIÓN CON <b>TASAS DE MERCADO</b> · SIN CONVERSIÓN INVENTADA</span>
+				<span class="brand">RFINANCE</span>
+			</footer>
+		</main>
+
+		<script src="/js/portfolio.js"></script>
+	</body>
+</html>

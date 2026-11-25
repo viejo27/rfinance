@@ -115,11 +115,54 @@ valor contra el epoch guardado en el cookie y cierra el resto de las sesiones
 en el siguiente request. Los tokens de verificación y reset se guardan
 hasheados (SHA-256) y son de un solo uso.
 
+## Cartera de inversiones
+
+`/inversiones` mide la estructura del portafolio contra la estrategia escrita:
+perfil de riesgo, renta fija vs renta variable (las mixtas se prorratean),
+economías, sectores, concentración por activo y por bloque, 11 chequeos
+ponderados, score, órdenes de rebalanceo y disparadores de venta.
+
+- Los valores se cargan a mano, en ARS o USD. El campo es el **valor total de
+  la posición**, no el precio por unidad. La vista puede ser `ARS · MEP`,
+  `ARS · CCL`, `USD · MEP` o `USD · CCL`; las tasas MEP/CCL salen de
+  [DolarAPI](https://dolarapi.com) y se cachean 10 minutos. Si la fuente no
+  responde se mantiene la última lectura marcada como vieja; si no hay ninguna,
+  la cartera queda “sin valuar” y no se inventa una tasa.
+- Los perfiles conservador, moderado y agresivo son presets editables; el
+  agresivo 40/60 es el del documento de estrategia.
+- Un activo de renta fija puede marcarse con `ES LIQUIDEZ` (uno por usuario).
+  Es la contraparte del rebalanceo: no lleva disparadores y recibe o paga el
+  neto de las compras y ventas.
+- `EJECUTAR` en una orden de rebalanceo lleva el activo al peso objetivo y
+  mueve la diferencia contra la liquidez. No hay rebalanceo global: las
+  órdenes se ejecutan de a una, como en la vida real.
+- `MARCAR EJECUTADO` en un disparador de venta vende el activo completo, lo
+  saca de la cartera y acredita la venta en la liquidez. El disparador queda
+  resuelto y deja de aparecer en `A EJECUTAR`.
+- El chequeo de cantidad cuenta **solo activos de renta variable** (8 a 13);
+  la renta fija, la liquidez y las mixtas no entran en ese rango. La tarjeta
+  agrega el reparto igual de la RV (60 % ÷ n) y, si hay mixtas, el número que
+  queda al descontar su parte de RV.
+- Cuando los objetivos no suman 100 % o el 40/60 se desvía, el panel
+  `OBJETIVOS` permite repartir RV o RF. Solo cambia porcentajes: no compra ni
+  vende. La mixta y la liquidez quedan fijas. Se puede repartir en partes
+  iguales o mantener las proporciones, con preview antes de aplicar.
+- El chequeo “Ancla y motor” muestra la banda y los pp fuera: BIEN dentro de
+  la banda, `FUERA DE BANDA` hasta el doble y ALERTA más allá.
+- El chequeo de pesos objetivo muestra cuánto falta o sobra para llegar a 100 %.
+- La cartera de ejemplo se carga con un botón explícito y solo cuando la
+  cartera está vacía; `VACIAR CARTERA` la borra completa, con confirmación.
+- Cotizaciones automáticas y liquidez del broker quedan para una fase posterior.
+  La fuente elegida es BYMA Open Data: su capa gratuita no responde sábados,
+  domingos ni feriados y tiene ~20 minutos de delay, así que se cachea la última
+  lectura. No hay conexión con IOL ni credenciales de trading.
+
 ## Routes
 
 | Method | Path | Purpose |
 | --- | --- | --- |
 | GET | `/` | Home, requires a session |
+| GET | `/inversiones` | Investment strategy surface, requires a session |
 | GET | `/login` | Login page |
 | GET | `/register` | Registration page |
 | GET | `/forgot-password` | Request a password reset link |
@@ -133,6 +176,21 @@ hasheados (SHA-256) y son de un solo uso.
 | POST | `/api/forgot-password` | Enqueue a reset link (always a generic 200) |
 | POST | `/api/reset-password` | Consume a reset token and rotate the password |
 | POST | `/api/resend-verification` | Re-send the verification link (session) |
+| GET | `/api/portfolio` | Criteria, assets, triggers, rates and diagnosis |
+| POST | `/api/portfolio/refresh` | Force a DolarAPI MEP/CCL refresh |
+| POST | `/api/portfolio/assets` | Create an asset |
+| PATCH | `/api/portfolio/assets/{id}` | Edit an asset |
+| DELETE | `/api/portfolio/assets/{id}` | Delete an asset and its triggers |
+| DELETE | `/api/portfolio/assets` | Clear the whole portfolio |
+| POST | `/api/portfolio/assets/{id}/rebalance` | Adjust the asset to its target weight |
+| POST | `/api/portfolio/targets/preview` | Preview a target repartition without saving |
+| POST | `/api/portfolio/targets/apply` | Save a target repartition |
+| POST | `/api/portfolio/assets/{id}/triggers` | Add a sell trigger |
+| PATCH | `/api/portfolio/triggers/{id}` | Edit, mark met or resolve a trigger |
+| POST | `/api/portfolio/triggers/{id}/execute` | Sell the asset and resolve its met trigger |
+| DELETE | `/api/portfolio/triggers/{id}` | Delete a trigger |
+| PUT | `/api/portfolio/settings` | Save the risk profile, view and limits |
+| POST | `/api/portfolio/example` | Load the example portfolio when empty |
 
 Unauthenticated requests to protected paths are redirected to `/login` by
 `src/middleware/auth.rs`; `/admin` access is enforced with `actix-web-grants`.
@@ -157,11 +215,13 @@ src/
 ├── main.rs              # pool, migrations, admin bootstrap, HTTP server
 ├── role.rs              # Role enum used for authorization
 ├── mail/                # SMTP/log, outbox + worker, tokens y plantillas
+├── market/              # DolarAPI MEP/CCL client + in-memory cache
+├── portfolio/           # pure strategy model, formatting and metrics engine
 ├── middleware/          # auth.rs (session redirect), grants.rs (role extractor)
 └── routes/
-    ├── api/             # JSON endpoints: login, register, logout, reset
+    ├── api/             # JSON endpoints: login, register, ledger, portfolio
     └── web/             # HTML endpoints: home, login, register, admin
-static/                  # css/style.css, js/*.js
+static/                  # css/style.css, css/dashboard.css, css/portfolio.css, js/*.js
 templates/               # askama HTML templates (email/ para los correos)
 migrations/              # sqlx up/down pairs
 ```

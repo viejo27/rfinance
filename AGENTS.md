@@ -228,17 +228,19 @@ rfinance_app/
 │   ├── main.rs             # Pool, migrations, admin bootstrap, HTTP server
 │   ├── role.rs             # `Role` enum (Admin/User) parsed from the session
 │   ├── mail/               # SMTP/log, outbox + worker, tokens y plantillas
+│   ├── market/             # DolarAPI MEP/CCL client + in-memory cache
+│   ├── portfolio/          # modelo puro de la estrategia + motor de métricas
 │   ├── middleware/
 │   │   ├── auth.rs         # `check_session`: redirects and public paths
 │   │   └── grants.rs       # `extract`: role extractor for actix-web-grants
 │   └── routes/
 │       ├── mod.rs
-│       ├── api/            # JSON endpoints: login, register, logout
-│       └── web/            # HTML endpoints: home, login, register, admin
+│       ├── api/            # JSON endpoints: login, register, ledger, portfolio
+│       └── web/            # HTML endpoints: home, portfolio, login, register, admin
 ├── static/
-│   ├── css/style.css
-│   └── js/                 # home.js, login.js, register.js
-└── templates/              # index.html, login.html, register.html, admin.html
+│   ├── css/style.css, dashboard.css, portfolio.css
+│   └── js/                 # home.js, portfolio.js, login.js, register.js
+└── templates/              # index.html, portfolio.html, login.html, register.html, admin.html
 ```
 
 ## Common Tasks

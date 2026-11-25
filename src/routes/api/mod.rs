@@ -4,6 +4,7 @@ pub mod email_verification;
 pub mod login;
 pub mod logout;
 pub mod password_reset;
+pub mod portfolio;
 pub mod recurrences;
 pub mod register;
 pub mod snapshot;
@@ -17,6 +18,13 @@ pub use login::login as api_login;
 pub use logout::logout as api_logout;
 pub use password_reset::{
     forgot_password as api_forgot_password, reset_password as api_reset_password,
+};
+pub use portfolio::{
+    portfolio_asset_create, portfolio_asset_delete, portfolio_asset_update, portfolio_assets_clear,
+    portfolio_example, portfolio_get, portfolio_rebalance_execute, portfolio_refresh,
+    portfolio_settings_update, portfolio_targets_apply, portfolio_targets_preview,
+    portfolio_trigger_create, portfolio_trigger_delete, portfolio_trigger_execute,
+    portfolio_trigger_update,
 };
 pub use recurrences::recurrence_delete as api_recurrence_delete;
 pub use register::register as api_register;

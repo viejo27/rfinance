@@ -49,22 +49,36 @@ Existing (implemented):
   bcrypt hashing; signed cookie sessions.
 - Roles: Admin / User via actix-web-grants; the admin account is bootstrapped from
   `.env` (`ADMIN_USER` / `ADMIN_PASSWORD`).
+- Income/expense ledger with categories, accounts & wallets with per-currency
+  balances, budgets & limits, recurring transactions and transfers.
+- Investments strategy surface at `/inversiones`: risk profiles, mixed
+  fixed-income/equity assets, composition by class/economy/sector, 11 weighted
+  checks, score, rebalancing orders, target repartition by RV/RF sleeve
+  (percentages only, with preview), a liquidity asset as the counterpart for
+  executing orders and sales, and written sell triggers. Values are entered manually in
+  ARS or USD; MEP/CCL rates come from DolarAPI and the view can be ARS·MEP,
+  ARS·CCL, USD·MEP or USD·CCL.
 - Stack: Rust 2024 (MSRV 1.94), actix-web 4.12, sqlx 0.9 + PostgreSQL, askama
   templates, vanilla JS, no frontend framework.
-- Schema: `users` + `user_data` (role, name, last_name; profile fields
-  nick_name/age/gender and ip/user_agent exist but are unused by registration).
+- Schema: `users`, `user_data`, `accounts`, `categories`, `transactions`,
+  `transfers`, `recurrences`, `portfolio_settings`, `assets`, `sell_triggers`,
+  `email_outbox`.
 
 Planned full suite (confirmed scope):
-- Income/expense ledger with categories; accounts & wallets with per-currency
-  balances; budgets & limits; reports & charts; recurring transactions; debts &
-  loans; savings goals; investments.
+- Reports & charts; debts & loans; savings goals; live quotes for the
+  investment portfolio (BYMA Open Data in a later phase, with the last reading
+  cached because the free tier does not answer weekends or holidays).
 
 Constraints and undecided facts:
 - The UI must be bilingual ES/EN; no i18n mechanism exists yet (copy is currently
-  mixed: login/register in Spanish, placeholder pages in English).
-- Multi-currency: every amount carries its currency; which currencies lead and how
-  conversion/inflation adjustment is treated are open decisions.
-- No automated tests yet; conventions are clippy-clean, fmt'ed code.
+  Spanish in the shipped surfaces).
+- Multi-currency: every amount carries its currency. The dashboard does not
+  convert between ARS and USD; the investments surface converts with the MEP or
+  CCL rate explicitly chosen by the user, and never invents a rate.
+- Investment values are manual in phase 1; live quote providers are a later
+  phase.
+- Automated tests cover the new portfolio engine and the existing finance flows;
+  conventions are clippy-clean, fmt'ed code.
 - Whether the unused profile fields (nick_name, age, gender, ip, user_agent) become
   product features is undecided.
 - Deployment target beyond local `127.0.0.1:8080` is undecided.
