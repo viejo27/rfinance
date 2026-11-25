@@ -23,6 +23,13 @@
 		return document.getElementById(id);
 	}
 
+	function confirmAction(options) {
+		if (window.RFinance && typeof window.RFinance.confirm === 'function') {
+			return window.RFinance.confirm(options);
+		}
+		return Promise.resolve(window.confirm(options.message));
+	}
+
 	function el(tag, cls, text) {
 		var node = document.createElement(tag);
 		if (cls) node.className = cls;
@@ -597,9 +604,14 @@
 
 	async function executeRebalance(assetId) {
 		var hasCash = state.assets.some(function (asset) { return asset.is_cash; });
-		if (!confirm(hasCash
-			? '¿Ejecutar la orden? El activo se ajusta al peso objetivo y la liquidez recibe o paga la diferencia.'
-			: '¿Ejecutar la orden? El activo se ajusta al peso objetivo y el total de la cartera se recalcula.')) return;
+		var accepted = await confirmAction({
+			title: 'EJECUTAR ORDEN',
+			message: hasCash
+				? '¿Ejecutar la orden? El activo se ajusta al peso objetivo y la liquidez recibe o paga la diferencia.'
+				: '¿Ejecutar la orden? El activo se ajusta al peso objetivo y el total de la cartera se recalcula.',
+			confirmLabel: 'EJECUTAR'
+		});
+		if (!accepted) return;
 		var ok = await mutate(
 			'/api/portfolio/assets/' + assetId + '/rebalance',
 			'POST',
@@ -851,9 +863,15 @@
 
 	async function executeTrigger(triggerId) {
 		var hasCash = state.assets.some(function (asset) { return asset.is_cash; });
-		if (!confirm(hasCash
-			? '¿Marcar como ejecutado? Se vende todo el activo, la liquidez recibe la venta y el disparador queda cerrado.'
-			: '¿Marcar como ejecutado? Se vende todo el activo, sale de la cartera y el disparador queda cerrado.')) return;
+		var accepted = await confirmAction({
+			title: 'MARCAR EJECUTADO',
+			message: hasCash
+				? '¿Marcar como ejecutado? Se vende todo el activo, la liquidez recibe la venta y el disparador queda cerrado.'
+				: '¿Marcar como ejecutado? Se vende todo el activo, sale de la cartera y el disparador queda cerrado.',
+			confirmLabel: 'MARCAR EJECUTADO',
+			danger: true
+		});
+		if (!accepted) return;
 		var ok = await mutate(
 			'/api/portfolio/triggers/' + triggerId + '/execute',
 			'POST',
@@ -1127,7 +1145,13 @@
 	}
 
 	async function deleteAsset(id) {
-		if (!confirm('¿Borrar el activo y todos sus disparadores?')) return;
+		var accepted = await confirmAction({
+			title: 'BORRAR ACTIVO',
+			message: '¿Borrar el activo y todos sus disparadores?',
+			confirmLabel: 'BORRAR',
+			danger: true
+		});
+		if (!accepted) return;
 		var ok = await mutate('/api/portfolio/assets/' + id, 'DELETE', undefined, false, 'assetStatus');
 		if (ok) {
 			if (selectedTriggerAssetId === id) selectedTriggerAssetId = null;
@@ -1137,7 +1161,13 @@
 	}
 
 	async function clearPortfolio() {
-		if (!confirm('¿Vaciar la cartera? Se borran todos los activos y sus disparadores. No se tocan tus cuentas ni tu libro.')) return;
+		var accepted = await confirmAction({
+			title: 'VACIAR CARTERA',
+			message: '¿Vaciar la cartera? Se borran todos los activos y sus disparadores. No se tocan tus cuentas ni tu libro.',
+			confirmLabel: 'VACIAR CARTERA',
+			danger: true
+		});
+		if (!accepted) return;
 		var ok = await mutate('/api/portfolio/assets', 'DELETE', undefined, false, 'assetStatus');
 		if (ok) {
 			selectedTriggerAssetId = null;
@@ -1165,7 +1195,13 @@
 	}
 
 	async function removeTrigger(id) {
-		if (!confirm('¿Borrar este disparador?')) return;
+		var accepted = await confirmAction({
+			title: 'BORRAR DISPARADOR',
+			message: '¿Borrar este disparador?',
+			confirmLabel: 'BORRAR',
+			danger: true
+		});
+		if (!accepted) return;
 		var ok = await mutate('/api/portfolio/triggers/' + id, 'DELETE', undefined, false, 'triggerStatus');
 		if (ok) showSectionNotice('triggerStatus', 'Disparador borrado', 'success');
 	}
@@ -1221,7 +1257,12 @@
 	}
 
 	async function loadExample() {
-		if (!confirm('¿Cargar la cartera de ejemplo? Se agregan 13 activos y sus disparadores.')) return;
+		var accepted = await confirmAction({
+			title: 'CARGAR EJEMPLO',
+			message: '¿Cargar la cartera de ejemplo? Se agregan 13 activos y sus disparadores.',
+			confirmLabel: 'CARGAR EJEMPLO'
+		});
+		if (!accepted) return;
 		var ok = await mutate('/api/portfolio/example', 'POST', undefined, false);
 		if (ok) showNotice('Cartera de ejemplo cargada', 'success');
 	}

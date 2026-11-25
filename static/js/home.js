@@ -50,6 +50,13 @@
 		return document.getElementById(id);
 	}
 
+	function confirmAction(options) {
+		if (window.RFinance && typeof window.RFinance.confirm === 'function') {
+			return window.RFinance.confirm(options);
+		}
+		return Promise.resolve(window.confirm(options.message));
+	}
+
 	// ---------- API ----------
 
 	async function request(url, options) {
@@ -321,7 +328,13 @@
 		}
 		var msg = '¿Borrar la cuenta «' + c.name + '»?';
 		if (n) msg += ' Sus ' + n + ' asiento(s) del libro también se borran.';
-		if (!window.confirm(msg)) return;
+		var accepted = await confirmAction({
+			title: 'BORRAR CUENTA',
+			message: msg,
+			confirmLabel: 'BORRAR',
+			danger: true
+		});
+		if (!accepted) return;
 		try {
 			await mutate('/api/accounts/' + c.id, 'DELETE', undefined, 'Cuenta «' + c.name + '» borrada.', 'accountStatus');
 		} catch (e) { /* el aviso ya quedó en pantalla */ }
@@ -579,20 +592,32 @@
 		return el('td', cls, text);
 	}
 
-	function deleteTransaction(m) {
+	async function deleteTransaction(m) {
 		var detail = '«' + m.description + '» (' + shortDate(m.entry_date) + ' · ' + amountText(m.value, m.currency) + ')';
-		if (!window.confirm('¿Borrar el asiento ' + detail + '?')) return;
+		var accepted = await confirmAction({
+			title: 'BORRAR ASIENTO',
+			message: '¿Borrar el asiento ' + detail + '?',
+			confirmLabel: 'BORRAR',
+			danger: true
+		});
+		if (!accepted) return;
 		pendingUndos[m.id] = 'transaction';
 		undoTimers[m.id] = setTimeout(function () { finalizeDelete(m.id); }, 4000);
 		renderLedger();
 		renderMonthFlow();
 	}
 
-	function deleteTransfer(t) {
+	async function deleteTransfer(t) {
 		var detail = '«' + t.description + '» (' + shortDate(t.entry_date) + ' · −' +
 			fmt(t.from_amount, t.from_currency) + ' ' + t.from_currency + ' → +' +
 			fmt(t.to_amount, t.to_currency) + ' ' + t.to_currency + ')';
-		if (!window.confirm('¿Borrar la transferencia ' + detail + '?')) return;
+		var accepted = await confirmAction({
+			title: 'BORRAR TRANSFERENCIA',
+			message: '¿Borrar la transferencia ' + detail + '?',
+			confirmLabel: 'BORRAR',
+			danger: true
+		});
+		if (!accepted) return;
 		pendingUndos[t.id] = 'transfer';
 		undoTimers[t.id] = setTimeout(function () { finalizeDelete(t.id); }, 4000);
 		renderLedger();
@@ -631,7 +656,13 @@
 				name = m.description;
 			}
 		}
-		if (!window.confirm('¿Borrar la recurrencia «' + name + '»? Se borran ' + generated + ' asiento(s) futuro(s); los ya cargados se conservan.')) return;
+		var accepted = await confirmAction({
+			title: 'BORRAR RECURRENCIA',
+			message: '¿Borrar la recurrencia «' + name + '»? Se borran ' + generated + ' asiento(s) futuro(s); los ya cargados se conservan.',
+			confirmLabel: 'BORRAR',
+			danger: true
+		});
+		if (!accepted) return;
 		try {
 			await mutate('/api/recurrences/' + recId, 'DELETE', undefined, 'Recurrencia cortada; los asientos ya cargados quedan.');
 		} catch (e) { /* aviso en pantalla */ }
@@ -700,7 +731,13 @@
 		}
 		var msg = '¿Borrar la categoría «' + cat.name + '»?';
 		if (entryCount) msg += ' Sus ' + entryCount + ' asiento(s) conservan la categoría como texto.';
-		if (!window.confirm(msg)) return;
+		var accepted = await confirmAction({
+			title: 'BORRAR CATEGORÍA',
+			message: msg,
+			confirmLabel: 'BORRAR',
+			danger: true
+		});
+		if (!accepted) return;
 		try {
 			await mutate('/api/categories/' + cat.id, 'DELETE', undefined, 'Categoría «' + cat.name + '» borrada.', 'categoryStatus');
 		} catch (e) { /* aviso en pantalla */ }

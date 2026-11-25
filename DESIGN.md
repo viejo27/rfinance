@@ -294,6 +294,9 @@ Divergence note: the direction contract scoped diagonals to section bands only; 
 ### Section Band (`.banda`) — the signature title
 Red block, paper stencil text inside, top-right corner sliced by the 26px clip, capped at 42ch, 22px above its section. The band *is* the heading; the same title treatment never appears outside it.
 
+### Confirmation Dialog (`.app-dialog`) — native `<dialog>`, sheet on the desk
+Paper-card sheet (3px ink frame, zero radius, `8px 8px 0` ink shadow) over an ink backdrop at 62% with no blur; its heading is the section-band gesture at dialog scale: a red 26px-clipped band with a stencil title. Body in mono 0.92rem, actions in Anton. Destructive confirmations use `.btn-danger` (outline at rest, red on hover/focus) with initial focus on CANCELAR; non-destructive ones use `.btn-primary` with initial focus on the confirm button. Esc, backdrop click and CANCELAR resolve false; the native dialog traps focus and returns it to the trigger. Opening is a 140ms `steps(2, end)` cut, removed by `prefers-reduced-motion`. API: `RFinance.confirm({ title, message, confirmLabel, cancelLabel, danger })` in `static/js/dialog.js`; the surfaces fall back to the native `confirm()` only if that module is unavailable.
+
 ### Totals Block (`.mando-total`) — the desk centerpiece
 Ink block (3px ink border, 18px 20px 14px padding) with a mono rotulo line ("TOTAL · ARS"), an Anton numeral at clamp(2.8rem, 5vw, 6rem) in tabular figures, and a quiet paper-65% sub-line of account names. A `{colors.rojo}` −30° wedge sits in the bottom-right corner. **Deficit state:** the whole block flips to red fill with red border (`.total-neg`). **Update state:** one 180ms two-frame cut from bright poster red back to ink (`.total-flash`).
 

@@ -41,3 +41,5 @@ El dueño aprobó cinco extensiones y las corrigió: el dataset de ejemplo se CO
 5. Categorías/presupuestos editables: AGREGAR CATEGORÍA inline (NOMBRE · LÍMITE MENSUAL opcional · MONEDA); EDITAR/BORRAR por fila; select de captura alimentado por esa lista; sin límite = "SIN LÍMITE" sin barra. Nav PRESUPUESTOS pasa a ancla.
 Persistencia: NINGUNA — todo en memoria de la pestaña; etiquetado "EN MEMORIA · DATOS DE EJEMPLO". Carteles: series sintéticas independientes del libro (etiquetadas); cuando exista backend, se derivarán de asientos reales.
 Nota de ejecución: el estado vive en JS (home.js) y los listados/bloques/gráficos se renderizan client-side; home.rs queda como host del andamio (email de sesión, CORTE, fecha default). El askama ya no renderiza listas dinámicas.
+
+Nota de implementación (2026-11-25): las confirmaciones de esta superficie usan el diálogo compartido `.app-dialog` (`RFinance.confirm`); la ventana DESHACER de 4 s sigue intacta. Reemplaza la decisión previa de `confirm()` nativo.

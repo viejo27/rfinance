@@ -287,6 +287,94 @@ input[type='date'].field {
 	color: var(--ocre);
 }
 
+/* ---------- Diálogo de confirmación ---------- */
+
+.app-dialog {
+	width: min(520px, calc(100vw - 32px));
+	max-height: calc(100vh - 32px);
+	max-height: calc(100dvh - 32px);
+	margin: auto;
+	padding: 0;
+	background: var(--papel-claro);
+	color: var(--tinta);
+	border: 3px solid var(--tinta);
+	border-radius: 0;
+	box-shadow: 8px 8px 0 var(--tinta);
+	overflow: auto;
+}
+
+.app-dialog::backdrop {
+	background: color-mix(in srgb, var(--tinta) 62%, transparent);
+}
+
+.dialog-band {
+	background: var(--rojo);
+	color: var(--papel);
+	padding: 10px 44px 10px 20px;
+	clip-path: polygon(0 0, calc(100% - var(--corte)) 0, 100% 100%, 0 100%);
+}
+
+.dialog-title {
+	font-family: var(--stencil);
+	font-size: 1.5rem;
+	font-weight: 400;
+	line-height: 1.1;
+	letter-spacing: 0.02em;
+	text-wrap: balance;
+	color: var(--papel);
+}
+
+.dialog-body {
+	padding: 20px 20px 18px;
+}
+
+.dialog-message {
+	font-size: 0.92rem;
+	line-height: 1.55;
+	overflow-wrap: anywhere;
+}
+
+.dialog-actions {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	gap: 10px;
+	margin-top: 20px;
+	padding-top: 16px;
+	border-top: var(--grosor) solid var(--tinta);
+}
+
+.app-dialog[open] {
+	animation: dialog-cut 140ms var(--paso);
+}
+
+@keyframes dialog-cut {
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+	to {
+		opacity: 1;
+		transform: translateY(0);
+	}
+}
+
+@media (max-width: 480px) {
+	.app-dialog {
+		width: calc(100vw - 24px);
+		max-height: calc(100dvh - 24px);
+	}
+
+	.dialog-actions {
+		display: grid;
+		grid-template-columns: 1fr;
+	}
+
+	.dialog-actions .btn {
+		width: 100%;
+	}
+}
+
 /* ---------- Página de sesión (login / register) ---------- */
 
 .auth-center {
